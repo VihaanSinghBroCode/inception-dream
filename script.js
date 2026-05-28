@@ -1614,6 +1614,306 @@
   requestAnimationFrame(drawEyes);
 
   // ─────────────────────────────────────────
+  // REALITY METER — oscillates, never quite 100%
+  // ─────────────────────────────────────────
+  const realityMeter = $("#realityMeter");
+  const realityValue = $("#realityValue");
+  const realityFill  = $("#realityFill");
+  if (realityMeter) {
+    setTimeout(() => realityMeter.classList.add("is-visible"), 800);
+    let realityBase = 100, realityNoise = 0, realityT = 0;
+    const updateReality = () => {
+      realityT += 0.012;
+      // base level drops with scroll depth; adds chaotic noise
+      const depthDrop = curDepth * 72;
+      realityNoise = Math.sin(realityT * 1.7) * 4 + Math.sin(realityT * 3.1) * 2.5 + Math.sin(realityT * 0.4) * 6;
+      const raw = clamp(100 - depthDrop + realityNoise, 0, 99.9);
+      const pct = raw.toFixed(1);
+      realityValue.textContent = pct + "%";
+      realityFill.style.width = raw + "%";
+      realityValue.classList.toggle("is-low", raw < 28);
+      realityValue.classList.toggle("is-mid", raw >= 28 && raw < 55);
+      requestAnimationFrame(updateReality);
+    };
+    requestAnimationFrame(updateReality);
+  }
+
+  // ─────────────────────────────────────────
+  // CURSOR PARTICLE TRAIL
+  // ─────────────────────────────────────────
+  const TRAIL_COUNT = 18;
+  const trailDots = Array.from({ length: TRAIL_COUNT }, (_, i) => {
+    const d = document.createElement("div");
+    d.className = "cursor-trail-dot";
+    const size = lerp(7, 2, i / TRAIL_COUNT);
+    d.style.cssText = `width:${size}px;height:${size}px;`;
+    document.body.appendChild(d);
+    return { el: d, x: mouse.x, y: mouse.y, size };
+  });
+  const trailHistory = Array.from({ length: TRAIL_COUNT + 1 }, () => ({ x: mouse.x, y: mouse.y }));
+  let trailFrame = 0;
+  const renderTrail = () => {
+    trailHistory.unshift({ x: mouse.x, y: mouse.y });
+    trailHistory.length = TRAIL_COUNT + 1;
+    trailDots.forEach((dot, i) => {
+      const pos = trailHistory[i + 1] || trailHistory[0];
+      dot.el.style.transform = `translate(${pos.x}px,${pos.y}px) translate(-50%,-50%)`;
+      const depthIntensity = 0.15 + curDepth * 0.85;
+      const alpha = (1 - i / TRAIL_COUNT) * depthIntensity * 0.85;
+      const hue = i % 2 === 0 ? "255,182,39" : "217,48,37";
+      dot.el.style.background = `rgba(${hue},${alpha.toFixed(3)})`;
+      dot.el.style.boxShadow = alpha > 0.3 ? `0 0 ${dot.size * 3}px rgba(255,182,39,${(alpha * 0.5).toFixed(2)})` : "";
+    });
+    requestAnimationFrame(renderTrail);
+  };
+  renderTrail();
+
+  // ─────────────────────────────────────────
+  // CLICK DREAM PORTALS
+  // ─────────────────────────────────────────
+  const spawnPortal = (x, y) => {
+    ["click-portal--ring", "click-portal--ring2"].forEach((cls, i) => {
+      const el = document.createElement("div");
+      el.className = `click-portal ${cls}`;
+      el.style.left = x + "px";
+      el.style.top  = y + "px";
+      document.body.appendChild(el);
+      const dur = i === 0 ? 900 : 1300;
+      setTimeout(() => el.remove(), dur + 50);
+    });
+  };
+  window.addEventListener("click", (e) => spawnPortal(e.clientX, e.clientY));
+
+  // ─────────────────────────────────────────
+  // GLITCH HOVER — hero title + big section headings
+  // ─────────────────────────────────────────
+  const glitchEl = (el) => {
+    if (el.classList.contains("glitching")) return;
+    const txt = el.textContent;
+    el.dataset.glitch = txt;
+    el.classList.add("can-glitch", "glitching");
+    setTimeout(() => el.classList.remove("glitching"), 320);
+  };
+  // Hero title letters spark + glitch on hover
+  $$(".hero__title span").forEach((s, i) => {
+    s.addEventListener("mouseenter", () => {
+      const rotations = ["-6deg","6deg","-10deg","8deg","-4deg","10deg","-8deg","5deg","-7deg"];
+      const settles   = ["-4px","4px","-6px","5px","-3px","7px","-5px","3px","-4px"];
+      s.style.setProperty("--spark-rot", rotations[i % rotations.length]);
+      s.style.setProperty("--spark-settle", settles[i % settles.length]);
+      s.classList.add("sparking");
+      const A = window.__incAudio;
+      if (A) A.playTick(400 + i * 80, 0.04);
+      setTimeout(() => s.classList.remove("sparking"), 500);
+      // glitch the whole title element
+      glitchEl(s.closest(".hero__title"));
+    });
+  });
+
+  // Big section headings glitch on hover
+  $$(".layers__heading, .totem__heading, .team__heading, .kick__word, .architect__heading").forEach((h) => {
+    h.addEventListener("mouseenter", () => glitchEl(h));
+  });
+
+  // ─────────────────────────────────────────
+  // DREAM WORD SPAWNER — depth-aware cursor words
+  // ─────────────────────────────────────────
+  const DREAM_WORDS = [
+    "DREAM","DEEPER","INCEPT","LIMBO","KICK","WAKE","REALITY","TOTEM",
+    "MEMORY","SUBCONSCIOUS","FOLD","PARADOX","ARCHITECT","FORGERY",
+    "IDEA","SEED","PLANT","FALL","TIME","LAYER","DEEPER","DEEPER",
+  ];
+  let lastSpawnTime = 0;
+  const spawnDreamWord = (x, y) => {
+    if (curDepth < 0.25) return;
+    const now = performance.now();
+    const minInterval = lerp(800, 180, clamp((curDepth - 0.25) / 0.75, 0, 1));
+    if (now - lastSpawnTime < minInterval) return;
+    lastSpawnTime = now;
+    const word = DREAM_WORDS[Math.floor(Math.random() * DREAM_WORDS.length)];
+    const el = document.createElement("div");
+    el.className = "dream-spawn-word";
+    const jitter = (Math.random() - 0.5) * 120;
+    el.style.left = (x + jitter) + "px";
+    el.style.top  = (y - 10) + "px";
+    const alpha = 0.4 + curDepth * 0.6;
+    const isDeep = curDepth > 0.6;
+    el.style.color = isDeep ? `rgba(217,48,37,${alpha.toFixed(2)})` : `rgba(181,78,0,${alpha.toFixed(2)})`;
+    el.textContent = word;
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 2900);
+  };
+  window.addEventListener("mousemove", (e) => spawnDreamWord(e.clientX, e.clientY));
+
+  // ─────────────────────────────────────────
+  // SECTION SHOCKWAVE — on each layer enter
+  // ─────────────────────────────────────────
+  const fireShockwave = () => {
+    const el = document.createElement("div");
+    el.className = "section-shockwave";
+    document.body.appendChild(el);
+    setTimeout(() => el.remove(), 1500);
+  };
+  $$(".layer").forEach((layer) => {
+    ScrollTrigger.create({
+      trigger: layer,
+      start: "top 55%",
+      onEnter: fireShockwave,
+    });
+  });
+
+  // ─────────────────────────────────────────
+  // WAVEFORM VISUALIZER on KICK
+  // ─────────────────────────────────────────
+  const waveCanvas = $("#kickWaveform");
+  if (waveCanvas) {
+    const wctx = waveCanvas.getContext("2d");
+    let waveT = 0;
+    let waveActive = false;
+    const resizeWave = () => {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      waveCanvas.width  = waveCanvas.offsetWidth  * dpr;
+      waveCanvas.height = waveCanvas.offsetHeight * dpr;
+      wctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    };
+    resizeWave();
+    window.addEventListener("resize", resizeWave);
+    ScrollTrigger.create({
+      trigger: ".kick", start: "top 80%",
+      onEnter: () => { waveActive = true; },
+    });
+    const drawWave = () => {
+      const W = waveCanvas.offsetWidth, H = waveCanvas.offsetHeight;
+      wctx.clearRect(0, 0, W, H);
+      if (!waveActive) { requestAnimationFrame(drawWave); return; }
+      waveT += 0.022;
+      // draw 4 overlapping waves at different phases/amps
+      const WAVES = [
+        { amp: 0.22, freq: 0.009, phase: 0,         color: "rgba(255,182,39,0.55)",  lw: 2 },
+        { amp: 0.14, freq: 0.014, phase: 2.1,        color: "rgba(255,106,0,0.35)",   lw: 1.5 },
+        { amp: 0.08, freq: 0.022, phase: 4.4,        color: "rgba(217,48,37,0.28)",   lw: 1 },
+        { amp: 0.32, freq: 0.005, phase: waveT * 0.4, color: "rgba(255,255,255,0.08)", lw: 3 },
+      ];
+      WAVES.forEach(({ amp, freq, phase, color, lw }) => {
+        wctx.beginPath();
+        wctx.strokeStyle = color;
+        wctx.lineWidth = lw;
+        for (let x = 0; x <= W; x += 2) {
+          const y = H / 2 + Math.sin(x * freq + waveT + phase) * H * amp
+                           + Math.sin(x * freq * 2.3 + waveT * 1.4 + phase) * H * amp * 0.4;
+          x === 0 ? wctx.moveTo(x, y) : wctx.lineTo(x, y);
+        }
+        wctx.stroke();
+      });
+      // central BWAAM pulse ring
+      const pulse = (Math.sin(waveT * 2.8) + 1) / 2;
+      const r = 60 + pulse * 80;
+      const grad = wctx.createRadialGradient(W/2, H/2, 0, W/2, H/2, r);
+      grad.addColorStop(0, `rgba(255,182,39,${(pulse * 0.3).toFixed(2)})`);
+      grad.addColorStop(1, "rgba(255,182,39,0)");
+      wctx.beginPath();
+      wctx.arc(W/2, H/2, r, 0, Math.PI * 2);
+      wctx.fillStyle = grad;
+      wctx.fill();
+      requestAnimationFrame(drawWave);
+    };
+    requestAnimationFrame(drawWave);
+  }
+
+  // ─────────────────────────────────────────
+  // SCROLL VELOCITY BLUR
+  // ─────────────────────────────────────────
+  let lastScrollY = window.scrollY, scrollVelocity = 0;
+  let fastScrollTimer = null;
+  lenis.on("scroll", ({ velocity }) => {
+    scrollVelocity = Math.abs(velocity);
+    const fast = scrollVelocity > 4.5;
+    document.body.classList.toggle("fast-scroll", fast);
+    clearTimeout(fastScrollTimer);
+    fastScrollTimer = setTimeout(() => document.body.classList.remove("fast-scroll"), 200);
+    // tilt the scroll content slightly with velocity
+    const tiltPx = clamp(velocity * 1.8, -12, 12);
+    document.documentElement.style.setProperty("--scroll-tilt", tiltPx + "px");
+  });
+
+  // ─────────────────────────────────────────
+  // MAGNETIC FIELD RINGS around giant totem
+  // ─────────────────────────────────────────
+  if (totemStage) {
+    [280, 380, 500, 640].forEach((sz, i) => {
+      const ring = document.createElement("div");
+      ring.className = "totem-field-ring";
+      ring.style.cssText = `
+        width:${sz}px; height:${sz}px;
+        animation-delay:${i * 0.75}s;
+        animation-duration:${3 + i * 0.8}s;
+      `;
+      totemStage.appendChild(ring);
+    });
+  }
+
+  // ─────────────────────────────────────────
+  // KICK WORD — heartbeat pulse when visible
+  // ─────────────────────────────────────────
+  if (kickWord) {
+    let kickPulseTimer = null;
+    ScrollTrigger.create({
+      trigger: ".kick", start: "top 60%", end: "bottom top",
+      onToggle: (self) => {
+        if (self.isActive) {
+          const beatKick = () => {
+            kickWord.classList.add("beat");
+            setTimeout(() => kickWord.classList.remove("beat"), 260);
+            kickPulseTimer = setTimeout(beatKick, 900);
+          };
+          beatKick();
+        } else {
+          clearTimeout(kickPulseTimer);
+        }
+      },
+    });
+  }
+
+  // ─────────────────────────────────────────
+  // OUTRO TOTEM ECHO — ghost ring on scroll into view
+  // ─────────────────────────────────────────
+  ScrollTrigger.create({
+    trigger: ".outro", start: "top 70%",
+    onEnter: () => {
+      const wrap = $(".outro__top-wrap");
+      if (!wrap) return;
+      for (let i = 0; i < 3; i++) {
+        setTimeout(() => {
+          const echo = document.createElement("div");
+          echo.className = "outro-echo";
+          echo.innerHTML = wrap.querySelector(".totem3d") ? wrap.querySelector(".totem3d").outerHTML : "";
+          echo.style.animationDelay = `${i * 0.4}s`;
+          wrap.appendChild(echo);
+          setTimeout(() => echo.remove(), 3200);
+        }, i * 400);
+      }
+    },
+  });
+
+  // ─────────────────────────────────────────
+  // PARALLAX TILT ON MOUSE — each section gets subtle depth
+  // ─────────────────────────────────────────
+  const parallaxSections = $$(".idea__content, .totem__content, .team__heading, .quotes__rail");
+  window.addEventListener("mousemove", (e) => {
+    const cx = (e.clientX / window.innerWidth - 0.5) * 2;
+    const cy = (e.clientY / window.innerHeight - 0.5) * 2;
+    parallaxSections.forEach((el) => {
+      const r = el.getBoundingClientRect();
+      const inView = r.top < window.innerHeight && r.bottom > 0;
+      if (!inView) return;
+      el.style.transform = `perspective(1200px) rotateX(${cy * -1.5}deg) rotateY(${cx * 2}deg) translateZ(0)`;
+    });
+  });
+  document.addEventListener("mouseleave", () => {
+    parallaxSections.forEach((el) => { el.style.transform = ""; });
+  });
+
+  // ─────────────────────────────────────────
   // KEEP SCROLLTRIGGER IN SYNC
   // ─────────────────────────────────────────
   window.addEventListener("load", () => ScrollTrigger.refresh());

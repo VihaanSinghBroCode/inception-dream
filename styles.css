@@ -2543,3 +2543,289 @@ body.zero-g #main { transition: transform 1.4s var(--ease-dramatic); }
   .fx-chroma, .fx-scan, .fx-debris, .fx-eyes { display: none !important; }
   .hidden-totem { animation: none !important; opacity: .4; }
 }
+
+/* ═══════════════════════════════════════════════════════════════════
+   NEW: INSANE INTERACTIVE ANIMATIONS + TEXT ALIGNMENT FIXES
+   ═══════════════════════════════════════════════════════════════════ */
+
+/* ─── TEXT ALIGNMENT FIXES ─── */
+.idea__attribution { text-align: center; }
+.architect__attribution { text-align: center; }
+.layer__meta {
+  display: inline-flex;
+  margin-left: auto;
+  margin-right: auto;
+}
+.tgame__row { align-items: center; }
+
+/* ─── REALITY METER ─── */
+.reality-meter {
+  position: fixed;
+  top: 64px; right: 28px;
+  z-index: 8900;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.28em;
+  color: var(--gold-deep);
+  font-weight: 700;
+  text-transform: uppercase;
+  opacity: 0;
+  transition: opacity 0.6s var(--ease);
+  pointer-events: none;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+}
+.reality-meter.is-visible { opacity: 1; }
+.reality-meter__label { color: var(--mist); font-size: 8px; letter-spacing: 0.35em; }
+.reality-meter__value {
+  font-size: 16px;
+  color: var(--ink);
+  letter-spacing: 0.06em;
+  font-variant-numeric: tabular-nums;
+  transition: color 0.4s var(--ease);
+}
+.reality-meter__value.is-low { color: var(--crimson); animation: realityFlicker 0.42s steps(2) infinite; }
+.reality-meter__value.is-mid { color: var(--gold-deep); }
+@keyframes realityFlicker { 50% { opacity: 0.15; } }
+.reality-meter__bar {
+  width: 80px; height: 2px;
+  background: rgba(10,9,8,0.1);
+  overflow: hidden;
+  border-radius: 1px;
+}
+.reality-meter__bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--crimson) 0%, var(--gold) 60%, #00e87a 100%);
+  transition: width 0.25s linear;
+  border-radius: 1px;
+}
+@media (max-width: 920px) {
+  .reality-meter { display: none; }
+}
+
+/* ─── CURSOR TRAIL PARTICLES ─── */
+.cursor-trail-dot {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9997;
+  border-radius: 50%;
+  mix-blend-mode: multiply;
+  will-change: transform, opacity;
+  transform: translate(-50%, -50%);
+  transition: opacity 0.05s linear;
+}
+
+/* ─── CLICK DREAM PORTAL ─── */
+.click-portal {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9996;
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+}
+.click-portal--ring {
+  animation: clickPortalRing 0.9s var(--ease-out) forwards;
+}
+.click-portal--ring2 {
+  animation: clickPortalRing2 1.3s var(--ease-out) forwards;
+}
+@keyframes clickPortalRing {
+  0%   { width: 0; height: 0; opacity: 0.8; border: 2.5px solid var(--gold); }
+  60%  { opacity: 0.35; border-width: 1.5px; }
+  100% { width: 280px; height: 280px; opacity: 0; border: 1px solid var(--gold-bright); }
+}
+@keyframes clickPortalRing2 {
+  0%   { width: 0; height: 0; opacity: 0.45; border: 1.5px solid var(--crimson); }
+  100% { width: 500px; height: 500px; opacity: 0; border: 1px solid rgba(217,48,37,0.2); }
+}
+
+/* ─── GLITCH HOVER on major headings ─── */
+.can-glitch {
+  display: inline-block;
+  position: relative;
+}
+.can-glitch.glitching::before,
+.can-glitch.glitching::after {
+  content: attr(data-glitch);
+  position: absolute;
+  inset: 0;
+  font: inherit;
+  letter-spacing: inherit;
+  font-size: inherit;
+  line-height: inherit;
+  text-transform: inherit;
+  pointer-events: none;
+}
+.can-glitch.glitching::before {
+  color: var(--crimson);
+  animation: glitchSliceA 0.28s steps(3) forwards;
+}
+.can-glitch.glitching::after {
+  color: #00d4ff;
+  animation: glitchSliceB 0.28s steps(3) forwards;
+}
+@keyframes glitchSliceA {
+  0%   { clip-path: polygon(0 15%, 100% 15%, 100% 35%, 0 35%); transform: translate(-5px, 2px); }
+  33%  { clip-path: polygon(0 50%, 100% 50%, 100% 70%, 0 70%); transform: translate(4px, -1px); }
+  66%  { clip-path: polygon(0 75%, 100% 75%, 100% 90%, 0 90%); transform: translate(-3px, 3px); }
+  100% { clip-path: none; transform: translate(0); }
+}
+@keyframes glitchSliceB {
+  0%   { clip-path: polygon(0 0, 100% 0, 100% 20%, 0 20%); transform: translate(4px, -2px); }
+  33%  { clip-path: polygon(0 45%, 100% 45%, 100% 65%, 0 65%); transform: translate(-5px, 1px); }
+  66%  { clip-path: polygon(0 80%, 100% 80%, 100% 100%, 0 100%); transform: translate(2px, -3px); }
+  100% { clip-path: none; transform: translate(0); }
+}
+
+/* ─── DREAM WORD SPAWNER ─── */
+.dream-spawn-word {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9989;
+  font-family: var(--mono);
+  font-size: 9px;
+  letter-spacing: 0.55em;
+  font-weight: 700;
+  text-transform: uppercase;
+  opacity: 0;
+  white-space: nowrap;
+  animation: dreamSpawn 2.8s ease-out forwards;
+}
+@keyframes dreamSpawn {
+  0%   { opacity: 0;   transform: translateY(0)    scale(0.6); }
+  12%  { opacity: 0.9; transform: translateY(-8px)  scale(1.05); }
+  80%  { opacity: 0.5; }
+  100% { opacity: 0;   transform: translateY(-80px) scale(0.75); }
+}
+
+/* ─── SECTION SHOCKWAVE ─── */
+.section-shockwave {
+  position: fixed;
+  left: 50%; top: 50%;
+  width: 0; height: 0;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 8060;
+  transform: translate(-50%, -50%);
+  animation: sectionShock 1.4s ease-out forwards;
+}
+@keyframes sectionShock {
+  0%   { width: 0; height: 0; opacity: 0.5; border: 2px solid var(--gold); }
+  40%  { opacity: 0.25; border-width: 1px; }
+  100% { width: 220vmax; height: 220vmax; opacity: 0; border: 1px solid rgba(255,182,39,0.05); }
+}
+
+/* ─── WAVEFORM on KICK ─── */
+.kick__waveform {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+  opacity: 0.22;
+}
+
+/* ─── SCROLL VELOCITY BLUR ─── */
+.hero__title span,
+.layer__title,
+.idea__heading span {
+  transition: filter 0.4s var(--ease), transform 0.4s var(--ease);
+}
+body.fast-scroll .hero__title span,
+body.fast-scroll .layer__title {
+  filter: blur(3px);
+  transform: translateY(var(--scroll-tilt, 0px));
+}
+
+/* ─── MAGNETIC FIELD RINGS (totem stage) ─── */
+.totem-field-ring {
+  position: absolute;
+  left: 50%; top: 50%;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 182, 39, 0.15);
+  pointer-events: none;
+  animation: fieldRingPulse 4s ease-in-out infinite;
+}
+@keyframes fieldRingPulse {
+  0%, 100% { opacity: 0.15; transform: translate(-50%,-50%) scale(1); }
+  50%       { opacity: 0.5;  transform: translate(-50%,-50%) scale(1.07); }
+}
+.totem__stage { position: relative; overflow: visible; }
+
+/* ─── HERO TITLE letter hover spark ─── */
+.hero__title span {
+  cursor: default;
+}
+.hero__title span.sparking {
+  animation: letterSpark 0.5s var(--ease-out) forwards !important;
+  color: var(--gold) !important;
+  text-shadow: 0 0 40px rgba(255,182,39,0.9), 0 0 80px rgba(255,106,0,0.6) !important;
+}
+@keyframes letterSpark {
+  0%   { transform: translateY(0) scale(1); }
+  30%  { transform: translateY(-18px) scale(1.15) rotate(var(--spark-rot, 5deg)); }
+  60%  { transform: translateY(-8px) scale(1.05); }
+  100% { transform: translateY(var(--spark-settle, 0px)); }
+}
+
+/* ─── MARQUEE pause on hover ─── */
+.marquee:hover .marquee__track { animation-play-state: paused; }
+.marquee:hover { cursor: pointer; }
+
+/* ─── KICK WORD beat pulse ─── */
+.kick__word {
+  transition: text-shadow 0.1s linear;
+}
+.kick__word.beat {
+  animation: kickBeat 0.25s ease-out forwards;
+}
+@keyframes kickBeat {
+  0%   { transform: scale(1); text-shadow: 0 0 100px rgba(255,182,39,0.4); }
+  40%  { transform: scale(1.06); text-shadow: 0 0 200px rgba(255,182,39,0.9), 0 0 60px rgba(217,48,37,0.7); }
+  100% { transform: scale(1); text-shadow: 0 0 100px rgba(255,182,39,0.4); }
+}
+
+/* ─── FLOATING TOTEM-ECHO in outro ─── */
+.outro-echo {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+  animation: outroEcho 3s ease-out forwards;
+  opacity: 0;
+}
+@keyframes outroEcho {
+  0%   { opacity: 0.5; transform: translate(-50%, -50%) scale(1); filter: blur(0); }
+  100% { opacity: 0; transform: translate(-50%, -50%) scale(2.2); filter: blur(12px); }
+}
+
+/* ─── NOISE FILTER on deep sections ─── */
+.layer--limbo .layer__bg--limbo {
+  animation: limboNoise 0.15s steps(3) infinite;
+}
+@keyframes limboNoise {
+  0%   { filter: none; }
+  33%  { filter: brightness(1.02) contrast(1.01); }
+  66%  { filter: brightness(0.98) saturate(1.03); }
+  100% { filter: none; }
+}
+
+/* ─── DEPTH PULSE on depth meter ─── */
+.depth-meter__fill {
+  box-shadow: 0 0 12px var(--gold), 0 0 24px rgba(255,106,0,0.4);
+  animation: depthGlow 2s ease-in-out infinite;
+}
+@keyframes depthGlow {
+  50% { box-shadow: 0 0 20px var(--gold-bright), 0 0 40px rgba(255,106,0,0.6); }
+}
+
+/* ─── SCORE / BEST flash ─── */
+.tgame__v.flash {
+  animation: scoreFlash 0.35s ease-out;
+}
+@keyframes scoreFlash {
+  0%,100% { color: var(--ink); }
+  50%     { color: var(--gold); transform: scale(1.15); }
+}

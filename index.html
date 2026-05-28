@@ -87,6 +87,13 @@
     <span class="hunt-hud__count"><span id="huntCount">0</span>/<span id="huntTotal">6</span></span>
   </div>
 
+  <!-- ════════ REALITY METER ════════ -->
+  <div class="reality-meter" id="realityMeter" aria-hidden="true">
+    <div class="reality-meter__label">REALITY</div>
+    <div class="reality-meter__value" id="realityValue">100%</div>
+    <div class="reality-meter__bar"><div class="reality-meter__bar-fill" id="realityFill"></div></div>
+  </div>
+
   <!-- ════════ ZERO-G INDICATOR ════════ -->
   <div class="zerog-badge" id="zerogBadge" aria-hidden="true">◌ ZERO&nbsp;GRAVITY</div>
 
@@ -1035,6 +1042,7 @@
     <!-- ════════════════════════════════════════ -->
     <section class="kick" id="kick">
       <div class="kick__flash" id="kickFlash"></div>
+      <canvas class="kick__waveform" id="kickWaveform"></canvas>
       <div class="kick__content">
         <div class="kick__brace">BRACE FOR THE</div>
         <h2 class="kick__word" id="kickWord">KICK</h2>
