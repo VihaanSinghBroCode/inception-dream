@@ -1,0 +1,1072 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="description" content="An immersive scroll-driven tribute to Christopher Nolan's Inception. Layers of dream, parallax, and totems." />
+  <meta name="theme-color" content="#fafaf6" />
+  <title>INCEPTION — Your Mind Is The Scene Of The Crime</title>
+  <link rel="icon" href="data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><polygon points='50,10 80,80 20,80' fill='%23ff6a00'/></svg>" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Anton&family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <!-- ════════ SCROLL PROGRESS ════════ -->
+  <div class="scroll-progress"><div class="scroll-progress__fill" id="scrollProgress"></div></div>
+
+  <!-- ════════ LOADING SCREEN ════════ -->
+  <div class="loader" id="loader" aria-hidden="true">
+    <div class="loader__inner">
+      <div class="loader__totem">
+        <div class="totem3d">
+          <div class="totem3d__top"></div>
+          <div class="totem3d__body"></div>
+          <div class="totem3d__point"></div>
+          <div class="totem3d__shadow"></div>
+        </div>
+      </div>
+      <div class="loader__title">
+        <span style="--i:0">I</span><span style="--i:1">N</span><span style="--i:2">C</span><span style="--i:3">E</span><span style="--i:4">P</span><span style="--i:5">T</span><span style="--i:6">I</span><span style="--i:7">O</span><span style="--i:8">N</span>
+      </div>
+      <div class="loader__sub">Entering the dream</div>
+      <div class="loader__bar"><div class="loader__bar-fill" id="loaderFill"></div></div>
+      <div class="loader__hint">Click anywhere to begin</div>
+    </div>
+  </div>
+
+  <!-- ════════ CUSTOM CURSOR ════════ -->
+  <div class="cursor" id="cursor"><div class="cursor__dot"></div></div>
+  <div class="cursor-ring" id="cursorRing"></div>
+
+  <!-- ════════ FIXED UI ════════ -->
+  <header class="ui-top">
+    <div class="ui-top__brand">
+      <span class="ui-top__triangle">▲</span>
+      <span class="ui-top__name">INCEPTION</span>
+    </div>
+    <nav class="ui-top__nav">
+      <a href="#idea" data-section="idea"><span>Idea</span></a>
+      <a href="#architect" data-section="architect"><span>Architect</span></a>
+      <a href="#layers" data-section="layers"><span>Layers</span></a>
+      <a href="#totem" data-section="totem"><span>Totem</span></a>
+      <a href="#team" data-section="team"><span>Team</span></a>
+    </nav>
+    <button class="audio-toggle" id="audioToggle" aria-label="Toggle ambience" title="Toggle ambience">
+      <span class="audio-toggle__bar"></span>
+      <span class="audio-toggle__bar"></span>
+      <span class="audio-toggle__bar"></span>
+      <span class="audio-toggle__bar"></span>
+    </button>
+  </header>
+
+  <!-- Side level indicator -->
+  <aside class="depth-meter" id="depthMeter">
+    <div class="depth-meter__label">DEPTH</div>
+    <div class="depth-meter__track">
+      <div class="depth-meter__fill" id="depthFill"></div>
+      <div class="depth-meter__tick" style="--p:0">REALITY</div>
+      <div class="depth-meter__tick" style="--p:.25">DREAM</div>
+      <div class="depth-meter__tick" style="--p:.5">DEEPER</div>
+      <div class="depth-meter__tick" style="--p:.75">DEEPER</div>
+      <div class="depth-meter__tick" style="--p:1">LIMBO</div>
+    </div>
+  </aside>
+
+  <!-- Mute timer (BWAAAM countdown style) -->
+  <div class="kick-timer" id="kickTimer">
+    <div class="kick-timer__label">KICK</div>
+    <div class="kick-timer__time" id="kickTime">00:00:00</div>
+  </div>
+
+  <!-- ════════ TOTEM HUNT HUD ════════ -->
+  <div class="hunt-hud" id="huntHud" title="Hidden totems are scattered through the dream. Find them all.">
+    <span class="hunt-hud__icon">▲</span>
+    <span class="hunt-hud__label">TOTEMS</span>
+    <span class="hunt-hud__count"><span id="huntCount">0</span>/<span id="huntTotal">6</span></span>
+  </div>
+
+  <!-- ════════ ZERO-G INDICATOR ════════ -->
+  <div class="zerog-badge" id="zerogBadge" aria-hidden="true">◌ ZERO&nbsp;GRAVITY</div>
+
+  <!-- ════════ CONTROLS TOAST + PANEL ════════ -->
+  <div class="keys-toast" id="keysToast" aria-hidden="true">
+    Press <b>H</b> for controls · <b>G</b> flips gravity
+  </div>
+  <div class="keys-panel" id="keysPanel" aria-hidden="true">
+    <button class="keys-panel__x" id="keysClose" aria-label="Close">✕</button>
+    <div class="keys-panel__title">DREAM CONTROLS</div>
+    <ul class="keys-panel__list">
+      <li><kbd>G</kbd><span>Flip gravity — enter zero-G</span></li>
+      <li><kbd>Space</kbd><span>Keep the totem spinning (in the Totem game)</span></li>
+      <li><kbd>↓</kbd> / <kbd>J</kbd><span>Descend a dream level</span></li>
+      <li><kbd>↑</kbd> / <kbd>K</kbd><span>Ascend a level</span></li>
+      <li><kbd>M</kbd><span>Toggle the score / ambience</span></li>
+      <li><kbd>▲ ×6</kbd><span>Find hidden totems to unlock Limbo</span></li>
+      <li><kbd>H</kbd><span>Show / hide this panel</span></li>
+    </ul>
+    <div class="keys-panel__foot">Your mind is the scene of the crime.</div>
+  </div>
+
+  <!-- ════════ LIMBO UNLOCK OVERLAY ════════ -->
+  <div class="limbo-unlock" id="limboUnlock" aria-hidden="true">
+    <div class="limbo-unlock__rings"></div>
+    <div class="limbo-unlock__inner">
+      <div class="limbo-unlock__eyebrow">ALL TOTEMS RECOVERED</div>
+      <h2 class="limbo-unlock__title">LIMBO</h2>
+      <p class="limbo-unlock__line">Unconstructed dream space. You found every totem — but down here, none of them work.</p>
+      <p class="limbo-unlock__q">So… are you still dreaming?</p>
+      <button class="limbo-unlock__btn magnetic" id="limboClose" data-magnetic><span class="magnetic__inner">WAKE UP</span></button>
+    </div>
+  </div>
+
+  <main id="main">
+    <!-- ════════════════════════════════════════ -->
+    <!--                  HERO                    -->
+    <!-- ════════════════════════════════════════ -->
+    <section class="hero" id="hero">
+      <div class="hero__bg">
+        <div class="hero__sky"></div>
+        <div class="hero__sun-ring"></div>
+        <canvas class="hero__stars" id="starfield"></canvas>
+        <div class="hero__layer hero__layer--3" data-speed="0.15">
+          <svg viewBox="0 0 1600 400" preserveAspectRatio="xMidYMax slice">
+            <g fill="#d4c8a6">
+              <rect x="0" y="280" width="100" height="120"/>
+              <rect x="120" y="240" width="80" height="160"/>
+              <rect x="220" y="200" width="140" height="200"/>
+              <rect x="380" y="260" width="80" height="140"/>
+              <rect x="480" y="180" width="120" height="220"/>
+              <rect x="620" y="220" width="100" height="180"/>
+              <rect x="740" y="160" width="160" height="240"/>
+              <rect x="920" y="220" width="80" height="180"/>
+              <rect x="1020" y="180" width="140" height="220"/>
+              <rect x="1180" y="240" width="100" height="160"/>
+              <rect x="1300" y="200" width="120" height="200"/>
+              <rect x="1440" y="260" width="160" height="140"/>
+            </g>
+          </svg>
+        </div>
+        <div class="hero__layer hero__layer--2" data-speed="0.3">
+          <svg viewBox="0 0 1600 400" preserveAspectRatio="xMidYMax slice">
+            <g fill="#a89776">
+              <rect x="40" y="200" width="60" height="200"/>
+              <rect x="140" y="160" width="100" height="240"/>
+              <rect x="270" y="220" width="80" height="180"/>
+              <rect x="380" y="140" width="120" height="260"/>
+              <rect x="540" y="200" width="60" height="200"/>
+              <rect x="630" y="100" width="180" height="300"/>
+              <rect x="840" y="180" width="80" height="220"/>
+              <rect x="960" y="120" width="140" height="280"/>
+              <rect x="1140" y="200" width="100" height="200"/>
+              <rect x="1270" y="160" width="120" height="240"/>
+              <rect x="1420" y="200" width="80" height="200"/>
+              <rect x="1520" y="140" width="80" height="260"/>
+            </g>
+          </svg>
+        </div>
+        <div class="hero__layer hero__layer--1" data-speed="0.55">
+          <svg viewBox="0 0 1600 400" preserveAspectRatio="xMidYMax slice">
+            <g fill="#3a2f1f">
+              <rect x="0" y="180" width="160" height="220"/>
+              <rect x="180" y="120" width="100" height="280"/>
+              <rect x="300" y="160" width="200" height="240"/>
+              <rect x="520" y="80" width="60" height="320"/>
+              <rect x="600" y="140" width="180" height="260"/>
+              <rect x="800" y="60" width="140" height="340"/>
+              <rect x="960" y="160" width="120" height="240"/>
+              <rect x="1100" y="100" width="220" height="300"/>
+              <rect x="1340" y="160" width="140" height="240"/>
+              <rect x="1500" y="120" width="100" height="280"/>
+            </g>
+          </svg>
+        </div>
+        <div class="hero__grain"></div>
+      </div>
+
+      <div class="hero__center">
+        <div class="hero__totem-wrap" data-speed="-0.2">
+          <div class="hero__totem-tilt" id="heroTotemTilt">
+            <div class="totem3d totem3d--hero">
+              <div class="totem3d__top"></div>
+              <div class="totem3d__body"></div>
+              <div class="totem3d__point"></div>
+              <div class="totem3d__shadow"></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="hero__credits">
+          <span class="hero__dot"></span>
+          A FILM BY CHRISTOPHER NOLAN · 2010
+          <span class="hero__dot"></span>
+        </div>
+        <h1 class="hero__title" data-text="INCEPTION">
+          <span style="--i:0">I</span><span style="--i:1">N</span><span style="--i:2">C</span><span style="--i:3">E</span><span style="--i:4">P</span><span style="--i:5">T</span><span style="--i:6">I</span><span style="--i:7">O</span><span style="--i:8">N</span>
+        </h1>
+        <p class="hero__tagline">Your mind is the <em>scene</em> of the crime.</p>
+
+        <div class="hero__meta-row">
+          <div class="hero__meta-item"><span class="hero__meta-num" data-count="148">148</span><span class="hero__meta-lbl">MINUTES</span></div>
+          <div class="hero__meta-divider"></div>
+          <div class="hero__meta-item"><span class="hero__meta-num" data-count="5">5</span><span class="hero__meta-lbl">DREAM LAYERS</span></div>
+          <div class="hero__meta-divider"></div>
+          <div class="hero__meta-item"><span class="hero__meta-num" data-count="7">7</span><span class="hero__meta-lbl">EXTRACTORS</span></div>
+          <div class="hero__meta-divider"></div>
+          <div class="hero__meta-item"><span class="hero__meta-num" data-count="1">1</span><span class="hero__meta-lbl">SPINNING TOP</span></div>
+        </div>
+
+        <div class="hero__scroll">
+          <div class="hero__scroll-line"></div>
+          <span>Scroll to descend</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Marquee strip -->
+    <div class="marquee marquee--gold" aria-hidden="true">
+      <div class="marquee__track">
+        <span>DREAM ▲ WITHIN ▲ A ▲ DREAM ▲</span>
+        <span>DREAM ▲ WITHIN ▲ A ▲ DREAM ▲</span>
+        <span>DREAM ▲ WITHIN ▲ A ▲ DREAM ▲</span>
+        <span>DREAM ▲ WITHIN ▲ A ▲ DREAM ▲</span>
+        <span>DREAM ▲ WITHIN ▲ A ▲ DREAM ▲</span>
+        <span>DREAM ▲ WITHIN ▲ A ▲ DREAM ▲</span>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════ -->
+    <!--                  IDEA                    -->
+    <!-- ════════════════════════════════════════ -->
+    <section class="idea" id="idea">
+      <div class="idea__bg">
+        <svg class="neural" viewBox="0 0 1200 800" preserveAspectRatio="xMidYMid slice">
+          <defs>
+            <radialGradient id="node-grad" cx="50%" cy="50%" r="50%">
+              <stop offset="0%" stop-color="#c8821a" stop-opacity="0.95"/>
+              <stop offset="100%" stop-color="#c8821a" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <g class="neural__lines" stroke="rgba(200,130,26,0.35)" stroke-width="0.8" fill="none"></g>
+          <g class="neural__nodes" fill="url(#node-grad)"></g>
+        </svg>
+        <div class="idea__blob idea__blob--a"></div>
+        <div class="idea__blob idea__blob--b"></div>
+      </div>
+
+      <div class="idea__content">
+        <div class="eyebrow">CHAPTER ONE</div>
+        <h2 class="idea__heading reveal-line">
+          <span>"What is the most</span>
+          <span><em>resilient parasite</em>?</span>
+          <span>Bacteria? A virus?</span>
+          <span>An <em>idea</em>.</span>
+          <span>Resilient.&nbsp;Highly contagious."</span>
+        </h2>
+        <div class="idea__attribution">— Dom Cobb</div>
+
+        <div class="idea__stats">
+          <div class="idea__stat" data-i="0">
+            <div class="idea__stat-num" data-count="100">0</div>
+            <div class="idea__stat-lbl">% Contagious once planted</div>
+          </div>
+          <div class="idea__stat" data-i="1">
+            <div class="idea__stat-num" data-count="3">0</div>
+            <div class="idea__stat-lbl">words can change a life</div>
+          </div>
+          <div class="idea__stat" data-i="2">
+            <div class="idea__stat-num" data-count="0" data-suffix="∞">0</div>
+            <div class="idea__stat-lbl">recursions inside the mind</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="idea__floating-words" aria-hidden="true">
+        <span style="--x:10%;--y:18%;--d:0s">IDEA</span>
+        <span style="--x:82%;--y:30%;--d:.4s">SEED</span>
+        <span style="--x:20%;--y:78%;--d:.8s">DREAM</span>
+        <span style="--x:74%;--y:72%;--d:1.2s">MEMORY</span>
+        <span style="--x:50%;--y:50%;--d:1.6s">INCEPT</span>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════ -->
+    <!--             ARCHITECTURE                 -->
+    <!-- ════════════════════════════════════════ -->
+    <section class="architect" id="architect">
+      <div class="architect__sticky">
+        <div class="eyebrow">CHAPTER TWO</div>
+        <h2 class="architect__heading" data-split="The Architect">The Architect</h2>
+        <p class="architect__desc">
+          The dreamer designs the world. The subject populates it with their secrets.
+          Paris folds in on itself. Stairs lead nowhere. Mirrors face each other across infinity.
+        </p>
+
+        <!-- Paris fold visual -->
+        <div class="paris">
+          <div class="paris__horizon"></div>
+          <div class="paris__bottom">
+            <div class="paris__grid"></div>
+          </div>
+          <div class="paris__top">
+            <div class="paris__grid"></div>
+          </div>
+          <div class="paris__rail"></div>
+        </div>
+
+        <!-- Penrose staircase -->
+        <div class="penrose">
+          <div class="penrose__stair" style="--i:0"></div>
+          <div class="penrose__stair" style="--i:1"></div>
+          <div class="penrose__stair" style="--i:2"></div>
+          <div class="penrose__stair" style="--i:3"></div>
+          <div class="penrose__stair" style="--i:4"></div>
+          <div class="penrose__stair" style="--i:5"></div>
+          <div class="penrose__stair" style="--i:6"></div>
+          <div class="penrose__stair" style="--i:7"></div>
+        </div>
+
+        <p class="architect__quote">"You mustn't be afraid to dream a little <em>bigger</em>, darling."</p>
+        <div class="architect__attribution">— Eames</div>
+      </div>
+    </section>
+
+    <!-- Marquee strip 2 -->
+    <div class="marquee marquee--ink" aria-hidden="true">
+      <div class="marquee__track marquee__track--rev">
+        <span>WAKE ◇ UP ◇ WAKE ◇ UP ◇</span>
+        <span>WAKE ◇ UP ◇ WAKE ◇ UP ◇</span>
+        <span>WAKE ◇ UP ◇ WAKE ◇ UP ◇</span>
+        <span>WAKE ◇ UP ◇ WAKE ◇ UP ◇</span>
+        <span>WAKE ◇ UP ◇ WAKE ◇ UP ◇</span>
+        <span>WAKE ◇ UP ◇ WAKE ◇ UP ◇</span>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════ -->
+    <!--               DREAM LAYERS               -->
+    <!-- ════════════════════════════════════════ -->
+    <section class="layers" id="layers">
+      <div class="layers__intro">
+        <div class="eyebrow">CHAPTER THREE</div>
+        <h2 class="layers__heading">A Dream Within A Dream</h2>
+        <p class="layers__desc">
+          Each level deeper, time stretches by twenty. Five minutes becomes an hour.
+          An hour becomes a week. The deeper you go, the harder it is to wake.
+        </p>
+        <div class="layers__arrow">↓</div>
+      </div>
+
+      <!-- LAYER 0: Reality -->
+      <article class="layer layer--reality" data-layer="0">
+        <div class="layer__bg layer__bg--reality">
+          <div class="layer__sun"></div>
+          <div class="layer__waves"></div>
+        </div>
+        <div class="layer__overlay"></div>
+        <div class="layer__content">
+          <div class="layer__meta">
+            <span class="layer__num">00</span>
+            <span class="layer__divider"></span>
+            <span class="layer__time">1× time</span>
+          </div>
+          <h3 class="layer__title">Reality</h3>
+          <p class="layer__where">A beach. Saito's mansion. Cobb is finally home.</p>
+          <p class="layer__quote">"What is the most important ingredient of a powerful idea? Genuine inspiration."</p>
+        </div>
+      </article>
+
+      <!-- LAYER 1: Rain / City -->
+      <article class="layer layer--rain" data-layer="1">
+        <div class="layer__bg layer__bg--rain">
+          <div class="layer__rain"></div>
+          <div class="layer__rain layer__rain--back"></div>
+          <div class="layer__city"></div>
+          <div class="layer__bridge"></div>
+        </div>
+        <div class="layer__overlay"></div>
+        <div class="layer__content">
+          <div class="layer__meta">
+            <span class="layer__num">01</span>
+            <span class="layer__divider"></span>
+            <span class="layer__time">12× slower · Yusuf dreams</span>
+          </div>
+          <h3 class="layer__title">The City</h3>
+          <p class="layer__where">Rain pours. The van falls from the bridge.</p>
+          <p class="layer__quote">"You're never just gonna remember how you got here."</p>
+        </div>
+      </article>
+
+      <!-- LAYER 2: Hotel / Zero gravity -->
+      <article class="layer layer--hotel" data-layer="2">
+        <div class="layer__bg layer__bg--hotel">
+          <div class="layer__hall">
+            <div class="layer__hall-floor"></div>
+            <div class="layer__hall-wall layer__hall-wall--l"></div>
+            <div class="layer__hall-wall layer__hall-wall--r"></div>
+            <div class="layer__hall-ceiling"></div>
+            <div class="layer__hall-door" style="--i:0"></div>
+            <div class="layer__hall-door" style="--i:1"></div>
+            <div class="layer__hall-door" style="--i:2"></div>
+            <div class="layer__hall-door" style="--i:3"></div>
+            <div class="layer__hall-door" style="--i:4"></div>
+          </div>
+        </div>
+        <div class="layer__overlay"></div>
+        <div class="layer__content">
+          <div class="layer__meta">
+            <span class="layer__num">02</span>
+            <span class="layer__divider"></span>
+            <span class="layer__time">144× slower · Arthur dreams</span>
+          </div>
+          <h3 class="layer__title">The Hotel</h3>
+          <p class="layer__where">Zero gravity. Bodies drift. The kick is the elevator drop.</p>
+          <p class="layer__quote">"Paradox."</p>
+        </div>
+      </article>
+
+      <!-- LAYER 3: Snow / Fortress -->
+      <article class="layer layer--snow" data-layer="3">
+        <div class="layer__bg layer__bg--snow">
+          <div class="layer__snow"></div>
+          <div class="layer__snow layer__snow--back"></div>
+          <div class="layer__mountains"></div>
+          <div class="layer__fortress"></div>
+        </div>
+        <div class="layer__overlay"></div>
+        <div class="layer__content">
+          <div class="layer__meta">
+            <span class="layer__num">03</span>
+            <span class="layer__divider"></span>
+            <span class="layer__time">1728× slower · Eames dreams</span>
+          </div>
+          <h3 class="layer__title">The Fortress</h3>
+          <p class="layer__where">A snow-covered hospital in the mountains. Fischer's mind held the secret.</p>
+          <p class="layer__quote">"Disappointed."</p>
+        </div>
+      </article>
+
+      <!-- LAYER 4: Limbo -->
+      <article class="layer layer--limbo" data-layer="4">
+        <div class="layer__bg layer__bg--limbo">
+          <div class="layer__skyline"></div>
+          <div class="layer__skyline layer__skyline--2"></div>
+          <div class="layer__skyline layer__skyline--3"></div>
+          <div class="layer__sea"></div>
+          <div class="layer__crumble">
+            <span style="--x:10%;--d:0s"></span>
+            <span style="--x:25%;--d:.6s"></span>
+            <span style="--x:40%;--d:1.2s"></span>
+            <span style="--x:55%;--d:.3s"></span>
+            <span style="--x:70%;--d:.9s"></span>
+            <span style="--x:85%;--d:1.5s"></span>
+          </div>
+        </div>
+        <div class="layer__overlay"></div>
+        <div class="layer__content">
+          <div class="layer__meta">
+            <span class="layer__num">∞</span>
+            <span class="layer__divider"></span>
+            <span class="layer__time">Time without measure</span>
+          </div>
+          <h3 class="layer__title">Limbo</h3>
+          <p class="layer__where">Unconstructed dream space. Decades pass in moments. The mind erodes.</p>
+          <p class="layer__quote">"We built our world together. We built decades of memory… until we lived a lifetime."</p>
+        </div>
+      </article>
+    </section>
+
+    <!-- ════════════════════════════════════════ -->
+    <!--            ICONIC SCENES (horizontal)    -->
+    <!-- ════════════════════════════════════════ -->
+    <section class="scenes" id="scenes">
+      <div class="scenes__sticky">
+        <div class="scenes__head">
+          <div class="eyebrow">INTERLUDE · FILMSTRIP</div>
+          <h2 class="scenes__heading">Iconic <em>Scenes</em></h2>
+          <p class="scenes__desc">Six moments etched into cinema. Drag horizontally — or just keep scrolling.</p>
+        </div>
+
+        <div class="scenes__track" id="scenesTrack">
+          <!-- 1: Folding Paris -->
+          <article class="scene" data-scene="0">
+            <div class="scene__art scene__art--paris">
+              <svg viewBox="0 0 600 400" preserveAspectRatio="xMidYMid slice">
+                <defs>
+                  <linearGradient id="parisSky" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#fff6e3"/>
+                    <stop offset="1" stop-color="#f5d59a"/>
+                  </linearGradient>
+                  <pattern id="parisGrid" width="36" height="36" patternUnits="userSpaceOnUse">
+                    <path d="M0 0 H36 M0 0 V36" stroke="rgba(40,25,5,0.45)" stroke-width="0.6"/>
+                  </pattern>
+                </defs>
+                <rect width="600" height="400" fill="url(#parisSky)"/>
+                <!-- top half (folded back) -->
+                <g transform="translate(0,0)">
+                  <rect width="600" height="200" fill="#e9d3a5"/>
+                  <g transform="translate(300,200) skewX(-22) translate(-300,-200)" opacity="0.85">
+                    <rect x="0" y="40" width="600" height="160" fill="url(#parisGrid)"/>
+                    <g fill="#2a1c0a">
+                      <rect x="40"  y="80"  width="40" height="120"/>
+                      <rect x="110" y="60"  width="50" height="140"/>
+                      <rect x="200" y="100" width="60" height="100"/>
+                      <rect x="290" y="50"  width="80" height="150"/>
+                      <rect x="400" y="90"  width="50" height="110"/>
+                      <rect x="480" y="70"  width="70" height="130"/>
+                    </g>
+                  </g>
+                </g>
+                <!-- horizon glow -->
+                <rect x="0" y="198" width="600" height="4" fill="#ff6a00"/>
+                <rect x="0" y="195" width="600" height="10" fill="#ff6a00" opacity="0.25"/>
+                <!-- bottom half -->
+                <g transform="translate(0,200)">
+                  <rect width="600" height="200" fill="#dcc189"/>
+                  <g opacity="0.9">
+                    <rect x="0" y="0" width="600" height="200" fill="url(#parisGrid)"/>
+                    <g fill="#2a1c0a">
+                      <rect x="20"  y="0"   width="50" height="120"/>
+                      <rect x="100" y="0"   width="40" height="80"/>
+                      <rect x="190" y="0"   width="70" height="140"/>
+                      <rect x="290" y="0"   width="60" height="90"/>
+                      <rect x="380" y="0"   width="80" height="130"/>
+                      <rect x="500" y="0"   width="60" height="100"/>
+                    </g>
+                  </g>
+                </g>
+                <!-- silhouette figure -->
+                <g transform="translate(298,170)" fill="#0a0908">
+                  <rect x="-3" y="0"   width="6"  height="22"/>
+                  <circle cx="0" cy="-5" r="4"/>
+                  <rect x="-2" y="22"  width="2"  height="10"/>
+                  <rect x="0"  y="22"  width="2"  height="10"/>
+                </g>
+              </svg>
+              <div class="scene__tag">001</div>
+            </div>
+            <div class="scene__meta">
+              <h3>Paris Folds</h3>
+              <p>"The dreamer designs the world…"</p>
+            </div>
+          </article>
+
+          <!-- 2: Penrose Stairs -->
+          <article class="scene" data-scene="1">
+            <div class="scene__art scene__art--stairs">
+              <svg viewBox="0 0 600 400" preserveAspectRatio="xMidYMid slice">
+                <defs>
+                  <linearGradient id="stairBg" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#f6f1e2"/>
+                    <stop offset="1" stop-color="#e0d3ad"/>
+                  </linearGradient>
+                  <linearGradient id="stairFace" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#ffb627"/>
+                    <stop offset="1" stop-color="#8e5a0c"/>
+                  </linearGradient>
+                </defs>
+                <rect width="600" height="400" fill="url(#stairBg)"/>
+                <g stroke="#0a0908" stroke-width="2" stroke-linejoin="round" fill="url(#stairFace)">
+                  <polygon points="80,320 180,320 200,300 100,300"/>
+                  <polygon points="180,320 280,260 300,240 200,300"/>
+                  <polygon points="280,260 380,220 400,200 300,240"/>
+                  <polygon points="380,220 480,180 500,160 400,200"/>
+                  <polygon points="480,180 520,160 540,140 500,160"/>
+                  <polygon points="520,160 460,120 480,100 540,140"/>
+                  <polygon points="460,120 360,90 380,70 480,100"/>
+                  <polygon points="360,90 240,90 260,70 380,70"/>
+                  <polygon points="240,90 140,130 160,110 260,70"/>
+                  <polygon points="140,130 100,170 120,150 160,110"/>
+                  <polygon points="100,170 80,220 100,200 120,150"/>
+                  <polygon points="80,220 80,320 100,300 100,200"/>
+                </g>
+                <!-- tiny silhouette walking up -->
+                <g transform="translate(265,225)" fill="#0a0908">
+                  <rect x="-3" y="0" width="6" height="18"/>
+                  <circle cx="0" cy="-4" r="3.5"/>
+                </g>
+                <text x="300" y="380" text-anchor="middle" fill="#0a0908" font-family="JetBrains Mono" font-size="10" letter-spacing="6">PENROSE · IMPOSSIBLE</text>
+              </svg>
+              <div class="scene__tag">002</div>
+            </div>
+            <div class="scene__meta">
+              <h3>The Penrose Stairs</h3>
+              <p>"You can trap them in a loop. Forever."</p>
+            </div>
+          </article>
+
+          <!-- 3: Rotating Hallway -->
+          <article class="scene" data-scene="2">
+            <div class="scene__art scene__art--hall">
+              <svg viewBox="0 0 600 400" preserveAspectRatio="xMidYMid slice">
+                <defs>
+                  <radialGradient id="hallVan" cx="50%" cy="50%" r="60%">
+                    <stop offset="0" stop-color="#fbe7b6"/>
+                    <stop offset="0.6" stop-color="#a07333"/>
+                    <stop offset="1" stop-color="#3a2510"/>
+                  </radialGradient>
+                </defs>
+                <rect width="600" height="400" fill="url(#hallVan)"/>
+                <g class="hall-spin" style="transform-origin:300px 200px">
+                  <polygon points="300,200 60,40 540,40" fill="#7a5424" stroke="#0a0908" stroke-width="1.5"/>
+                  <polygon points="300,200 540,40 540,360" fill="#a07333" stroke="#0a0908" stroke-width="1.5"/>
+                  <polygon points="300,200 540,360 60,360" fill="#5a3a14" stroke="#0a0908" stroke-width="1.5"/>
+                  <polygon points="300,200 60,360 60,40" fill="#8a6028" stroke="#0a0908" stroke-width="1.5"/>
+                  <!-- doors -->
+                  <g fill="#2a1a08" stroke="#ffb627" stroke-width="1">
+                    <rect x="120" y="160" width="22" height="80"/>
+                    <rect x="180" y="160" width="22" height="80"/>
+                    <rect x="400" y="160" width="22" height="80"/>
+                    <rect x="460" y="160" width="22" height="80"/>
+                  </g>
+                  <!-- floating figure -->
+                  <g transform="translate(300,210) rotate(35)" fill="#0a0908">
+                    <rect x="-4" y="-14" width="8" height="28" rx="2"/>
+                    <circle cx="0" cy="-20" r="5"/>
+                    <rect x="-12" y="-8" width="8" height="3"/>
+                    <rect x="4"   y="-8" width="8" height="3"/>
+                  </g>
+                </g>
+              </svg>
+              <div class="scene__tag">003</div>
+            </div>
+            <div class="scene__meta">
+              <h3>Zero-G Hotel</h3>
+              <p>"Paradox."</p>
+            </div>
+          </article>
+
+          <!-- 4: Falling Van -->
+          <article class="scene" data-scene="3">
+            <div class="scene__art scene__art--van">
+              <svg viewBox="0 0 600 400" preserveAspectRatio="xMidYMid slice">
+                <defs>
+                  <linearGradient id="vanSky" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#cbd5dd"/>
+                    <stop offset="0.7" stop-color="#7a8693"/>
+                    <stop offset="1" stop-color="#384451"/>
+                  </linearGradient>
+                </defs>
+                <rect width="600" height="400" fill="url(#vanSky)"/>
+                <!-- rain streaks -->
+                <g stroke="#dde6ef" stroke-width="0.6" opacity="0.7">
+                  <line x1="20"  y1="0" x2="0"   y2="60"/>
+                  <line x1="80"  y1="0" x2="60"  y2="60"/>
+                  <line x1="140" y1="0" x2="120" y2="60"/>
+                  <line x1="200" y1="0" x2="180" y2="60"/>
+                  <line x1="260" y1="0" x2="240" y2="60"/>
+                  <line x1="320" y1="0" x2="300" y2="60"/>
+                  <line x1="380" y1="0" x2="360" y2="60"/>
+                  <line x1="440" y1="0" x2="420" y2="60"/>
+                  <line x1="500" y1="0" x2="480" y2="60"/>
+                  <line x1="560" y1="0" x2="540" y2="60"/>
+                  <line x1="40"  y1="60" x2="20"  y2="120"/>
+                  <line x1="160" y1="80" x2="140" y2="140"/>
+                  <line x1="280" y1="60" x2="260" y2="120"/>
+                  <line x1="400" y1="90" x2="380" y2="150"/>
+                  <line x1="520" y1="70" x2="500" y2="130"/>
+                </g>
+                <!-- bridge -->
+                <g stroke="#0a0908" stroke-width="2" fill="#3a4654">
+                  <rect x="0" y="220" width="600" height="14"/>
+                  <line x1="80"  y1="234" x2="80"  y2="280"/>
+                  <line x1="180" y1="234" x2="180" y2="280"/>
+                  <line x1="380" y1="234" x2="380" y2="280"/>
+                  <line x1="500" y1="234" x2="500" y2="280"/>
+                </g>
+                <!-- water -->
+                <rect x="0" y="320" width="600" height="80" fill="#1f2a36"/>
+                <path d="M0 326 Q150 318 300 326 T600 326" stroke="#7a8693" stroke-width="1.5" fill="none" opacity="0.7"/>
+                <path d="M0 350 Q150 342 300 350 T600 350" stroke="#7a8693" stroke-width="1" fill="none" opacity="0.5"/>
+                <!-- van mid-fall -->
+                <g transform="translate(290,150) rotate(20)" stroke="#0a0908" stroke-width="2">
+                  <rect x="-40" y="-20" width="80" height="34" rx="3" fill="#dcd1bc"/>
+                  <rect x="-40" y="-20" width="34" height="34" rx="3" fill="#a89876"/>
+                  <rect x="-32" y="-14" width="20" height="14" fill="#9ab0bf"/>
+                  <circle cx="-26" cy="18" r="6" fill="#1a1208"/>
+                  <circle cx="28"  cy="18" r="6" fill="#1a1208"/>
+                </g>
+                <!-- speed lines -->
+                <g stroke="#fff" stroke-width="1" opacity="0.7">
+                  <line x1="270" y1="120" x2="260" y2="90"/>
+                  <line x1="290" y1="120" x2="285" y2="80"/>
+                  <line x1="310" y1="120" x2="320" y2="85"/>
+                </g>
+              </svg>
+              <div class="scene__tag">004</div>
+            </div>
+            <div class="scene__meta">
+              <h3>The Bridge</h3>
+              <p>"Five minutes in the van. One hour down here."</p>
+            </div>
+          </article>
+
+          <!-- 5: Spinning Top -->
+          <article class="scene" data-scene="4">
+            <div class="scene__art scene__art--top">
+              <svg viewBox="0 0 600 400" preserveAspectRatio="xMidYMid slice">
+                <defs>
+                  <radialGradient id="topLight" cx="50%" cy="40%" r="60%">
+                    <stop offset="0" stop-color="#fff6df"/>
+                    <stop offset="0.4" stop-color="#f4d28a"/>
+                    <stop offset="1" stop-color="#8c5a18"/>
+                  </radialGradient>
+                  <linearGradient id="topGold" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#ffd96a"/>
+                    <stop offset="0.5" stop-color="#c8821a"/>
+                    <stop offset="1" stop-color="#5e3a04"/>
+                  </linearGradient>
+                </defs>
+                <rect width="600" height="400" fill="url(#topLight)"/>
+                <!-- table surface -->
+                <ellipse cx="300" cy="320" rx="240" ry="40" fill="#5e3a04" opacity="0.55"/>
+                <!-- shadow -->
+                <ellipse cx="300" cy="285" rx="60" ry="10" fill="#0a0908" opacity="0.45"/>
+                <!-- top -->
+                <g transform="translate(300,260)" stroke="#0a0908" stroke-width="2">
+                  <ellipse cx="0" cy="-90" rx="60" ry="14" fill="url(#topGold)"/>
+                  <path d="M-60 -90 L60 -90 L36 -40 L-36 -40 Z" fill="url(#topGold)"/>
+                  <path d="M-36 -40 L36 -40 L0 30 Z" fill="#7a5208"/>
+                  <ellipse cx="0" cy="-90" rx="60" ry="14" fill="none" stroke="#7a5208"/>
+                </g>
+                <!-- motion arc -->
+                <g stroke="#ffb627" stroke-width="2" fill="none" opacity="0.55">
+                  <path d="M210 170 Q300 140 390 170" stroke-dasharray="4 4"/>
+                  <path d="M230 200 Q300 175 370 200" stroke-dasharray="3 5"/>
+                </g>
+                <text x="300" y="380" text-anchor="middle" fill="#0a0908" font-family="JetBrains Mono" font-size="11" letter-spacing="6">DREAMING…</text>
+              </svg>
+              <div class="scene__tag">005</div>
+            </div>
+            <div class="scene__meta">
+              <h3>The Totem</h3>
+              <p>"Is it still spinning?"</p>
+            </div>
+          </article>
+
+          <!-- 6: Limbo Crumbles -->
+          <article class="scene" data-scene="5">
+            <div class="scene__art scene__art--limbo">
+              <svg viewBox="0 0 600 400" preserveAspectRatio="xMidYMid slice">
+                <defs>
+                  <linearGradient id="limboSky" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0" stop-color="#c4cdd6"/>
+                    <stop offset="1" stop-color="#5a6776"/>
+                  </linearGradient>
+                </defs>
+                <rect width="600" height="400" fill="url(#limboSky)"/>
+                <!-- distant cliffs -->
+                <g fill="#2a3340">
+                  <rect x="0" y="240" width="80" height="160"/>
+                  <rect x="540" y="240" width="60" height="160"/>
+                </g>
+                <!-- skyscrapers crumbling -->
+                <g fill="#1a2530" stroke="#0a0908" stroke-width="1">
+                  <rect x="100" y="120" width="44" height="260"/>
+                  <rect x="160" y="80"  width="60" height="300"/>
+                  <rect x="240" y="160" width="34" height="220"/>
+                  <rect x="290" y="60"  width="70" height="320"/>
+                  <rect x="380" y="140" width="50" height="240"/>
+                  <rect x="450" y="100" width="80" height="280"/>
+                </g>
+                <!-- crumble debris falling -->
+                <g fill="#0a0908">
+                  <rect x="120" y="200" width="6" height="6" transform="rotate(15 123 203)"/>
+                  <rect x="180" y="260" width="8" height="8" transform="rotate(-25 184 264)"/>
+                  <rect x="260" y="220" width="5" height="5"/>
+                  <rect x="330" y="180" width="9" height="9" transform="rotate(40 334 184)"/>
+                  <rect x="410" y="240" width="7" height="7"/>
+                  <rect x="480" y="200" width="6" height="6" transform="rotate(-15 483 203)"/>
+                  <rect x="150" y="320" width="6" height="6"/>
+                  <rect x="350" y="320" width="5" height="5"/>
+                </g>
+                <!-- sea -->
+                <rect x="0" y="340" width="600" height="60" fill="#0e1620"/>
+                <path d="M0 350 Q150 344 300 350 T600 350" stroke="#5a6776" stroke-width="1" fill="none" opacity="0.5"/>
+                <!-- crack lines on buildings -->
+                <g stroke="#ffb627" stroke-width="0.8" opacity="0.6">
+                  <path d="M170 100 L185 200 L172 280"/>
+                  <path d="M320 80 L300 180 L325 280"/>
+                  <path d="M470 120 L500 220 L480 320"/>
+                </g>
+              </svg>
+              <div class="scene__tag">006</div>
+            </div>
+            <div class="scene__meta">
+              <h3>Limbo Collapses</h3>
+              <p>"We built decades of memory… until we lived a lifetime."</p>
+            </div>
+          </article>
+        </div>
+
+        <div class="scenes__progress">
+          <div class="scenes__progress-track"><div class="scenes__progress-fill" id="scenesFill"></div></div>
+          <div class="scenes__progress-label" id="scenesLabel">01 / 06</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════ -->
+    <!--                 TOTEM                    -->
+    <!-- ════════════════════════════════════════ -->
+    <section class="totem" id="totem">
+      <div class="totem__bg">
+        <div class="totem__rings">
+          <div class="totem__ring" style="--i:0"></div>
+          <div class="totem__ring" style="--i:1"></div>
+          <div class="totem__ring" style="--i:2"></div>
+          <div class="totem__ring" style="--i:3"></div>
+        </div>
+        <div class="totem__shine"></div>
+      </div>
+
+      <div class="totem__content">
+        <div class="eyebrow">CHAPTER FOUR</div>
+        <h2 class="totem__heading">The Totem</h2>
+        <p class="totem__desc">
+          A small, personal object — with a weight, a balance, a flaw only you know.
+          In a dream, it behaves wrong. In reality, it tells the truth.
+        </p>
+      </div>
+
+      <div class="totem__stage" id="totemStage">
+        <div class="totem__plinth"></div>
+        <div class="totem3d totem3d--giant" id="totemBig">
+          <div class="totem3d__top"></div>
+          <div class="totem3d__body"></div>
+          <div class="totem3d__point"></div>
+          <div class="totem3d__shadow"></div>
+        </div>
+        <button class="totem__cta magnetic" id="totemCta" data-magnetic>
+          <span class="magnetic__inner">CLICK TO SPIN</span>
+        </button>
+      </div>
+
+      <div class="totem__question">
+        <p class="totem__q-text" id="totemQ">Is it still spinning?</p>
+        <div class="totem__readout" id="totemReadout">— STATIONARY —</div>
+      </div>
+
+      <!-- ░░ TOTEM STABILITY GAME ░░ -->
+      <div class="tgame" id="tgame">
+        <div class="tgame__row">
+          <div class="tgame__stat"><span class="tgame__k">TIME DREAMING</span><span class="tgame__v" id="tgDepth">0.0s</span></div>
+          <div class="tgame__stat tgame__stat--mid"><span class="tgame__k">DEPTH</span><span class="tgame__v" id="tgLevel">REALITY</span></div>
+          <div class="tgame__stat"><span class="tgame__k">BEST</span><span class="tgame__v" id="tgBest">0.0s</span></div>
+        </div>
+        <div class="tgame__bar"><div class="tgame__bar-fill" id="tgFill"></div></div>
+        <div class="tgame__hint" id="tgHint">TAP THE TOTEM · OR HOLD SPACE · KEEP IT SPINNING</div>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════ -->
+    <!--                  TEAM                    -->
+    <!-- ════════════════════════════════════════ -->
+    <section class="team" id="team">
+      <div class="eyebrow">CHAPTER FIVE</div>
+      <h2 class="team__heading">The Crew</h2>
+      <p class="team__desc">Seven minds. One impossible heist. Plant an idea so deep the subject believes it's their own.</p>
+
+      <div class="team__grid">
+        <article class="card" data-role="extractor" style="--i:0">
+          <div class="card__face card__face--front">
+            <div class="card__role">EXTRACTOR</div>
+            <div class="card__name">Dom Cobb</div>
+            <div class="card__actor">Leonardo DiCaprio</div>
+            <div class="card__sigil">▲</div>
+          </div>
+          <div class="card__face card__face--back">
+            <div class="card__bio">A skilled thief who steals secrets from the unconscious. Haunted by Mal — a memory that refuses to stay buried.</div>
+            <div class="card__totem">Totem: brass spinning top</div>
+          </div>
+        </article>
+
+        <article class="card" data-role="point" style="--i:1">
+          <div class="card__face card__face--front">
+            <div class="card__role">POINT MAN</div>
+            <div class="card__name">Arthur</div>
+            <div class="card__actor">Joseph Gordon-Levitt</div>
+            <div class="card__sigil">◆</div>
+          </div>
+          <div class="card__face card__face--back">
+            <div class="card__bio">The researcher. The planner. The one who improvises a kick in zero gravity.</div>
+            <div class="card__totem">Totem: loaded die</div>
+          </div>
+        </article>
+
+        <article class="card" data-role="architect" style="--i:2">
+          <div class="card__face card__face--front">
+            <div class="card__role">ARCHITECT</div>
+            <div class="card__name">Ariadne</div>
+            <div class="card__actor">Elliot Page</div>
+            <div class="card__sigil">⬡</div>
+          </div>
+          <div class="card__face card__face--back">
+            <div class="card__bio">A prodigy of design. She builds the mazes that confound the mind's defenses.</div>
+            <div class="card__totem">Totem: bishop chess piece</div>
+          </div>
+        </article>
+
+        <article class="card" data-role="forger" style="--i:3">
+          <div class="card__face card__face--front">
+            <div class="card__role">FORGER</div>
+            <div class="card__name">Eames</div>
+            <div class="card__actor">Tom Hardy</div>
+            <div class="card__sigil">⬢</div>
+          </div>
+          <div class="card__face card__face--back">
+            <div class="card__bio">A shapeshifter inside dreams. He becomes whoever the mark must trust.</div>
+            <div class="card__totem">Totem: poker chip</div>
+          </div>
+        </article>
+
+        <article class="card" data-role="chemist" style="--i:4">
+          <div class="card__face card__face--front">
+            <div class="card__role">CHEMIST</div>
+            <div class="card__name">Yusuf</div>
+            <div class="card__actor">Dileep Rao</div>
+            <div class="card__sigil">●</div>
+          </div>
+          <div class="card__face card__face--back">
+            <div class="card__bio">The architect of compounds. His sedative is strong enough to dream three levels deep.</div>
+            <div class="card__totem">Totem: undisclosed</div>
+          </div>
+        </article>
+
+        <article class="card" data-role="client" style="--i:5">
+          <div class="card__face card__face--front">
+            <div class="card__role">TOURIST</div>
+            <div class="card__name">Saito</div>
+            <div class="card__actor">Ken Watanabe</div>
+            <div class="card__sigil">◇</div>
+          </div>
+          <div class="card__face card__face--back">
+            <div class="card__bio">The client. An old man, full of regret. Waiting in Limbo for a stranger he once knew.</div>
+            <div class="card__totem">Totem: none — he forgets</div>
+          </div>
+        </article>
+
+        <article class="card" data-role="mark" style="--i:6">
+          <div class="card__face card__face--front">
+            <div class="card__role">THE MARK</div>
+            <div class="card__name">Robert Fischer</div>
+            <div class="card__actor">Cillian Murphy</div>
+            <div class="card__sigil">✕</div>
+          </div>
+          <div class="card__face card__face--back">
+            <div class="card__bio">Heir to an empire. They will plant an idea in his mind — and let him believe it was always his.</div>
+            <div class="card__totem">Pinwheel of childhood</div>
+          </div>
+        </article>
+
+        <article class="card card--ghost" data-role="shade" style="--i:7">
+          <div class="card__face card__face--front">
+            <div class="card__role">SHADE</div>
+            <div class="card__name">Mal</div>
+            <div class="card__actor">Marion Cotillard</div>
+            <div class="card__sigil">◯</div>
+          </div>
+          <div class="card__face card__face--back">
+            <div class="card__bio">A projection. A ghost. A wife who chose to wake from the wrong life. She still walks every dream.</div>
+            <div class="card__totem">She kept it locked in a safe</div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- Marquee strip 3 -->
+    <div class="marquee marquee--gold" aria-hidden="true">
+      <div class="marquee__track">
+        <span>YOU ▲ MUSTN'T ▲ BE ▲ AFRAID ▲ TO ▲ DREAM ▲ A ▲ LITTLE ▲ BIGGER ▲</span>
+        <span>YOU ▲ MUSTN'T ▲ BE ▲ AFRAID ▲ TO ▲ DREAM ▲ A ▲ LITTLE ▲ BIGGER ▲</span>
+        <span>YOU ▲ MUSTN'T ▲ BE ▲ AFRAID ▲ TO ▲ DREAM ▲ A ▲ LITTLE ▲ BIGGER ▲</span>
+      </div>
+    </div>
+
+    <!-- ════════════════════════════════════════ -->
+    <!--                QUOTES                    -->
+    <!-- ════════════════════════════════════════ -->
+    <section class="quotes" id="quotes">
+      <div class="eyebrow">CHAPTER SIX</div>
+      <h2 class="quotes__heading">Fragments</h2>
+
+      <div class="quotes__rail">
+        <blockquote class="q" data-i="0">
+          <div class="q__mark">"</div>
+          <p>You're waiting for a train. A train that'll take you far away.</p>
+          <cite>— Mal</cite>
+        </blockquote>
+
+        <blockquote class="q" data-i="1">
+          <div class="q__mark">"</div>
+          <p>Dreams feel real while we're in them. It's only when we wake up that we realize something was actually strange.</p>
+          <cite>— Cobb</cite>
+        </blockquote>
+
+        <blockquote class="q" data-i="2">
+          <div class="q__mark">"</div>
+          <p>Downwards is the only way forwards.</p>
+          <cite>— Eames</cite>
+        </blockquote>
+
+        <blockquote class="q" data-i="3">
+          <div class="q__mark">"</div>
+          <p>I'm going to improvise.</p>
+          <cite>— Arthur</cite>
+        </blockquote>
+
+        <blockquote class="q" data-i="4">
+          <div class="q__mark">"</div>
+          <p>Do you want to take a leap of faith? Or become an old man, filled with regret, waiting to die alone?</p>
+          <cite>— Saito</cite>
+        </blockquote>
+
+        <blockquote class="q q--big" data-i="5">
+          <div class="q__mark">"</div>
+          <p>We need to go <em>deeper</em>.</p>
+          <cite>— Cobb</cite>
+        </blockquote>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════ -->
+    <!--                  KICK                    -->
+    <!-- ════════════════════════════════════════ -->
+    <section class="kick" id="kick">
+      <div class="kick__flash" id="kickFlash"></div>
+      <div class="kick__content">
+        <div class="kick__brace">BRACE FOR THE</div>
+        <h2 class="kick__word" id="kickWord">KICK</h2>
+        <p class="kick__bwaam">— BWAAAAAMMM —</p>
+        <p class="kick__sub">"Non, je ne regrette rien."</p>
+        <button class="kick__wake magnetic" id="kickWake" data-magnetic><span class="magnetic__inner">Wake up</span></button>
+      </div>
+    </section>
+
+    <!-- ════════════════════════════════════════ -->
+    <!--                OUTRO                     -->
+    <!-- ════════════════════════════════════════ -->
+    <footer class="outro">
+      <div class="outro__top-wrap">
+        <div class="totem3d totem3d--small" id="totemEnd">
+          <div class="totem3d__top"></div>
+          <div class="totem3d__body"></div>
+          <div class="totem3d__point"></div>
+          <div class="totem3d__shadow"></div>
+        </div>
+      </div>
+      <p class="outro__line">Is it still spinning?</p>
+      <p class="outro__credit">An immersive tribute to <em>Inception</em> (2010) — directed by Christopher Nolan.</p>
+      <p class="outro__legal">Fan project. No affiliation with Warner Bros. or Legendary Pictures.</p>
+      <button class="outro__top-btn magnetic" id="backToTop" data-magnetic><span class="magnetic__inner">↑ BACK TO REALITY</span></button>
+    </footer>
+  </main>
+
+  <!-- ════════ SCRIPTS ════════ -->
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/gsap.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/gsap@3.12.5/dist/ScrollTrigger.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lenis@1.1.13/dist/lenis.min.js"></script>
+  <script src="script.js"></script>
+</body>
+</html>

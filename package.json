@@ -1,0 +1,10 @@
+{
+  "name": "inception-dream",
+  "version": "1.0.0",
+  "private": true,
+  "description": "An immersive, scroll-driven tribute to Christopher Nolan's Inception.",
+  "scripts": {
+    "dev": "python3 -m http.server 4173",
+    "build": "echo 'static — nothing to build'"
+  }
+}
