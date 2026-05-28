@@ -1913,6 +1913,7 @@ a { color: inherit; text-decoration: none; cursor: pointer; }
   display: grid; place-items: center;
   height: 140px;
   margin-bottom: 32px;
+  position: relative;
 }
 .outro__line {
   font-family: var(--italic);
@@ -2556,7 +2557,18 @@ body.zero-g #main { transition: transform 1.4s var(--ease-dramatic); }
   margin-left: auto;
   margin-right: auto;
 }
-.tgame__row { align-items: center; }
+.tgame__row { align-items: flex-end; }
+
+/* ─── POSITION: RELATIVE for glitch pseudo-elements ─── */
+/* hero__title already has position:relative; these don't */
+.layers__heading,
+.totem__heading,
+.team__heading,
+.kick__word,
+.architect__heading,
+.scenes__heading {
+  position: relative;
+}
 
 /* ─── REALITY METER ─── */
 .reality-meter {
@@ -2625,6 +2637,9 @@ body.zero-g #main { transition: transform 1.4s var(--ease-dramatic); }
   z-index: 9996;
   border-radius: 50%;
   transform: translate(-50%, -50%);
+  width: 0;
+  height: 0;
+  border: none;
 }
 .click-portal--ring {
   animation: clickPortalRing 0.9s var(--ease-out) forwards;
@@ -2658,6 +2673,10 @@ body.zero-g #main { transition: transform 1.4s var(--ease-dramatic); }
   line-height: inherit;
   text-transform: inherit;
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
 }
 .can-glitch.glitching::before {
   color: var(--crimson);
@@ -2731,12 +2750,12 @@ body.zero-g #main { transition: transform 1.4s var(--ease-dramatic); }
 .hero__title span,
 .layer__title,
 .idea__heading span {
-  transition: filter 0.4s var(--ease), transform 0.4s var(--ease);
+  transition: filter 0.3s var(--ease);
 }
+/* Only blur — never override GSAP-controlled transforms */
 body.fast-scroll .hero__title span,
 body.fast-scroll .layer__title {
-  filter: blur(3px);
-  transform: translateY(var(--scroll-tilt, 0px));
+  filter: blur(2px);
 }
 
 /* ─── MAGNETIC FIELD RINGS (totem stage) ─── */

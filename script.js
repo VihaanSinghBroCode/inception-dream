@@ -1857,19 +1857,16 @@
   // ─────────────────────────────────────────
   if (kickWord) {
     let kickPulseTimer = null;
+    const beatKick = () => {
+      kickWord.classList.add("beat");
+      setTimeout(() => kickWord.classList.remove("beat"), 260);
+      kickPulseTimer = setTimeout(beatKick, 900);
+    };
     ScrollTrigger.create({
       trigger: ".kick", start: "top 60%", end: "bottom top",
       onToggle: (self) => {
-        if (self.isActive) {
-          const beatKick = () => {
-            kickWord.classList.add("beat");
-            setTimeout(() => kickWord.classList.remove("beat"), 260);
-            kickPulseTimer = setTimeout(beatKick, 900);
-          };
-          beatKick();
-        } else {
-          clearTimeout(kickPulseTimer);
-        }
+        clearTimeout(kickPulseTimer);
+        if (self.isActive) beatKick();
       },
     });
   }
@@ -1898,7 +1895,8 @@
   // ─────────────────────────────────────────
   // PARALLAX TILT ON MOUSE — each section gets subtle depth
   // ─────────────────────────────────────────
-  const parallaxSections = $$(".idea__content, .totem__content, .team__heading, .quotes__rail");
+  // Only target containers that GSAP doesn't animate directly
+  const parallaxSections = $$(".idea__content, .totem__content");
   window.addEventListener("mousemove", (e) => {
     const cx = (e.clientX / window.innerWidth - 0.5) * 2;
     const cy = (e.clientY / window.innerHeight - 0.5) * 2;
@@ -1909,7 +1907,7 @@
       el.style.transform = `perspective(1200px) rotateX(${cy * -1.5}deg) rotateY(${cx * 2}deg) translateZ(0)`;
     });
   });
-  document.addEventListener("mouseleave", () => {
+  window.addEventListener("mouseleave", () => {
     parallaxSections.forEach((el) => { el.style.transform = ""; });
   });
 
