@@ -559,7 +559,9 @@ a { color: inherit; text-decoration: none; cursor: pointer; }
 }
 .hero__totem-wrap {
   position: absolute;
-  left: 50%; top: -34%;
+  /* Lifted clear of the wordmark so the spinning top hovers ABOVE
+     "INCEPTION" instead of masking the centre "P". */
+  left: 50%; top: -62%;
   transform: translateX(-50%);
   pointer-events: none;
   opacity: 1;
@@ -598,10 +600,9 @@ a { color: inherit; text-decoration: none; cursor: pointer; }
 }
 .hero__title span {
   display: inline-block;
-  opacity: 0;
-  transform: translateY(80px) rotateX(-90deg);
-  animation: heroLetterIn 1.4s var(--ease-dramatic) forwards;
-  animation-delay: calc(var(--i) * 0.08s + 1.2s);
+  /* Entrance + float are owned entirely by GSAP (see script.js).
+     The previous CSS keyframe ran in parallel and raced GSAP's tweens,
+     which left the centre letter ("P") stuck hidden. */
   transform-origin: bottom;
   will-change: transform;
 }
@@ -1755,11 +1756,10 @@ a { color: inherit; text-decoration: none; cursor: pointer; }
   text-align: left;
   padding: 42px 64px;
   border-left: 3px solid var(--gold);
+  /* entrance state owned by GSAP 3D slide */
   opacity: 0;
-  transform: translateX(-40px);
-  transition: opacity 1s var(--ease), transform 1s var(--ease);
 }
-.q.is-in { opacity: 1; transform: translateX(0); }
+.q.is-in { opacity: 1; }
 .q__mark {
   position: absolute;
   top: -10px; left: -12px;
@@ -2533,6 +2533,17 @@ body.zero-g #main { transition: transform 1.4s var(--ease-dramatic); }
   .keys-panel { right: 12px; left: 12px; width: auto; bottom: 80px; }
   .tgame__stat { min-width: 0; }
   .tgame__v { font-size: 15px; }
+
+  /* The depth-meter tick LABELS collided with section copy on narrow
+     screens — keep the glowing track as an ambient indicator but drop
+     the words so nothing overlaps. */
+  .depth-meter { right: 8px; gap: 6px; }
+  .depth-meter__label { display: none; }
+  .depth-meter__track { width: 3px; height: 160px; }
+  .depth-meter__tick { display: none; }
+
+  /* Lift the controls toast above the KICK timer so they never stack. */
+  .keys-toast { bottom: 64px; font-size: 10px; padding: 8px 14px; max-width: calc(100vw - 24px); text-align: center; }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -2847,4 +2858,94 @@ body.fast-scroll .layer__title {
 @keyframes scoreFlash {
   0%,100% { color: var(--ink); }
   50%     { color: var(--gold); transform: scale(1.15); }
+}
+
+/* ════════════════════════════════════════════════════════════════════
+   NEW SCROLL ANIMATIONS & SOUND TRIGGERS
+   ════════════════════════════════════════════════════════════════════ */
+
+/* ─── Layer burst dots ─── */
+.layer-burst-dot {
+  position: fixed;
+  pointer-events: none;
+  z-index: 9990;
+  border-radius: 3px;
+  transform: translate(-50%, -50%);
+  transform-origin: center center;
+  animation: layerBurst 1.6s cubic-bezier(.15,.85,.25,1) forwards;
+}
+@keyframes layerBurst {
+  0%   { opacity: 0.9; translate: 0 0; scale: 1.3; rotate: 0deg; }
+  15%  { opacity: 0.85; }
+  100% { opacity: 0;   translate: var(--dx) var(--dy); scale: 0.1; rotate: 540deg; }
+}
+
+/* ─── Limbo building shake ─── */
+@keyframes limboShake {
+  0%,100% { transform: none; }
+  10%     { transform: translateX(-4px) skewX(1deg); }
+  30%     { transform: translateX(5px)  skewX(-1.5deg); }
+  50%     { transform: translateX(-3px) translateY(2px) skewX(0.8deg); }
+  70%     { transform: translateX(4px)  skewX(-0.5deg); }
+  90%     { transform: translateX(-2px); }
+}
+.limbo-shake {
+  animation: limboShake 0.85s ease-in-out;
+}
+
+/* ─── Card scan projection effect ─── */
+@keyframes cardScan {
+  0%   { box-shadow: 0 0 0 0 rgba(255,182,39,0); }
+  30%  { box-shadow: 0 0 0 2px rgba(255,182,39,0.7), inset 0 0 30px rgba(255,182,39,0.08); }
+  100% { box-shadow: 0 0 0 0 rgba(255,182,39,0); }
+}
+.card-scan {
+  animation: cardScan 0.75s ease-out forwards;
+}
+
+/* ─── Marquee track — skew is driven by JS via inline style ─── */
+.marquee__track {
+  transition: transform 0.3s ease-out;
+}
+
+/* ─── Hero sky scale ─── */
+.hero__sky {
+  transform-origin: center bottom;
+  will-change: transform;
+}
+
+/* ─── Architect section 3D transforms ─── */
+.architect__desc,
+.architect__quote {
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+}
+
+/* ─── Quotes 3D approach ─── */
+.quotes__rail {
+  perspective: 1200px;
+}
+.q {
+  transform-style: preserve-3d;
+  will-change: transform, opacity;
+}
+
+/* ─── Depth-hue reactive glow on FX layers ─── */
+:root { --layer-hue: 40; }
+.fx-vignette {
+  /* Subtle hue tint to match active dream layer */
+  filter: hue-rotate(calc((var(--layer-hue, 40) - 40) * 1deg));
+  transition: filter 1s ease;
+}
+
+/* ─── Layer content reveal — ensure perspective for 3D ─── */
+.layer__content {
+  perspective: 800px;
+}
+
+/* ─── Hero layers — will-change for scroll performance ─── */
+.hero__layer--1,
+.hero__layer--2 {
+  will-change: transform, opacity;
+  transform-origin: center bottom;
 }

@@ -564,16 +564,7 @@
     scrollTrigger: { trigger: ".totem", start: "top bottom", end: "bottom top", scrub: 1 },
   });
 
-  // ─────────────────────────────────────────
-  // QUOTES REVEAL — staggered with translate
-  // ─────────────────────────────────────────
-  $$(".q").forEach((q) => {
-    ScrollTrigger.create({
-      trigger: q,
-      start: "top 82%",
-      onEnter: () => q.classList.add("is-in"),
-    });
-  });
+  // Quotes reveal is handled by the GSAP 3D slide further below.
 
   // ─────────────────────────────────────────
   // CARDS — staggered entrance + tilt on hover
@@ -1116,23 +1107,33 @@
     droneGain.gain.linearRampToValueAtTime(target, audioCtx.currentTime + 1.2);
 
     if (audioOn) {
+      startRumble();
       // start heartbeat loop — interval shortens with depth (set later)
       const beat = () => {
         const scrollEl = document.documentElement;
         const max = scrollEl.scrollHeight - window.innerHeight;
         const p = clamp(window.scrollY / Math.max(1, max), 0, 1);
         playHeartbeat(0.25 + p * 0.45);
+        // update sub-rumble intensity with depth
+        if (rumbleGainNode) {
+          rumbleGainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+          rumbleGainNode.gain.linearRampToValueAtTime(p * 0.045, audioCtx.currentTime + 0.8);
+        }
         const next = lerp(1400, 520, p);
         heartbeatInterval = setTimeout(beat, next);
       };
       beat();
-      // signature stretched brass intro + ticking clock + piano motif
+      // signature stretched brass intro + ticking clock
       setTimeout(() => playStretchedBrass(), 200);
       setTimeout(() => startClock(), 400);
-      setTimeout(() => playPiano(), 1600);
     } else {
       clearTimeout(heartbeatInterval);
       clearTimeout(clockTimer);
+      clearTimeout(alarmTimer);
+      if (rumbleGainNode) {
+        rumbleGainNode.gain.cancelScheduledValues(audioCtx.currentTime);
+        rumbleGainNode.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.6);
+      }
     }
   });
 
@@ -1151,16 +1152,51 @@
     },
   });
 
-  // Smaller BWAAAMs fire when entering each dream layer
+  // Each dream layer: riser + BWAAAM combo (deeper layers = more intense)
   $$(".layer").forEach((layer, idx) => {
     ScrollTrigger.create({
       trigger: layer,
       start: "top 60%",
       onEnter: () => {
         if (!audioOn) return;
-        playBwaam(0.3 + idx * 0.1);
+        playDreamRiser(idx);
+        setTimeout(() => playBwaam(0.3 + idx * 0.12), 400);
       },
     });
+  });
+
+  // Glass shimmer on architect / Paris-fold reveal
+  ScrollTrigger.create({
+    trigger: ".architect", start: "top 60%",
+    onEnter: () => { if (audioOn) { playGlassShimmer(); setTimeout(playGlassShimmer, 700); } },
+  });
+
+  // Limbo choir when the limbo layer enters
+  ScrollTrigger.create({
+    trigger: ".layer--limbo", start: "top 65%",
+    onEnter: () => { if (audioOn) playLimboChoir(); },
+  });
+
+  // Piano motif on quotes
+  ScrollTrigger.create({
+    trigger: ".quotes", start: "top 65%",
+    onEnter: () => { if (audioOn) { setTimeout(playPiano, 200); } },
+  });
+
+  // Alarm tick escalation near kick (starts when kick is 2 viewports away)
+  let alarmStarted = false;
+  ScrollTrigger.create({
+    trigger: ".kick", start: "top 200%",
+    onEnter: () => {
+      if (alarmStarted || !audioOn) return;
+      alarmStarted = true;
+      startAlarm();
+    },
+  });
+  // Stop alarm once kick section is fully entered (BWAAAM takes over)
+  ScrollTrigger.create({
+    trigger: ".kick", start: "top 40%",
+    onEnter: () => { clearTimeout(alarmTimer); alarmStarted = false; },
   });
 
   // Reverse swell on each chapter heading
@@ -1172,9 +1208,156 @@
     });
   });
 
+  // ── Dream-descent riser ──────────────────────────────────────
+  // A low-to-high noise sweep + detuned sine swell that evokes
+  // the falling-through-dream-layers sensation.
+  const playDreamRiser = (depth = 0) => {
+    if (!audioCtx || !audioOn) return;
+    const t0 = audioCtx.currentTime;
+    const dur = 1.8;
+    // Noise swept from bass to upper-mids
+    const len = audioCtx.sampleRate * dur;
+    const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+    const d = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) d[i] = (Math.random() * 2 - 1) * (i / len);
+    const src = audioCtx.createBufferSource();
+    src.buffer = buf;
+    const filt = audioCtx.createBiquadFilter();
+    filt.type = "bandpass";
+    filt.frequency.setValueAtTime(60 + depth * 80, t0);
+    filt.frequency.exponentialRampToValueAtTime(2200 + depth * 800, t0 + dur);
+    filt.Q.value = 2.4;
+    const g = audioCtx.createGain();
+    g.gain.setValueAtTime(0.0001, t0);
+    g.gain.linearRampToValueAtTime(0.22, t0 + dur * 0.7);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + dur + 0.1);
+    src.connect(filt); filt.connect(g); g.connect(masterGain);
+    const send = audioCtx.createGain(); send.gain.value = 0.4;
+    g.connect(send); send.connect(convolver);
+    src.start(t0);
+    // Detuned sine swell underneath
+    const freq = 55 + depth * 12;
+    [1, 1.498, 2.0].forEach((mult, i) => {
+      const o = audioCtx.createOscillator();
+      o.type = "sine"; o.frequency.value = freq * mult * (1 + i * 0.003);
+      const og = audioCtx.createGain();
+      og.gain.setValueAtTime(0.0001, t0 + i * 0.06);
+      og.gain.linearRampToValueAtTime(0.09 / (i + 1), t0 + 0.4 + i * 0.06);
+      og.gain.exponentialRampToValueAtTime(0.0001, t0 + dur + 0.2);
+      o.connect(og); og.connect(masterGain);
+      const rs = audioCtx.createGain(); rs.gain.value = 0.3;
+      og.connect(rs); rs.connect(convolver);
+      o.start(t0 + i * 0.04); o.stop(t0 + dur + 0.3);
+    });
+  };
+
+  // ── Glass / crystal shimmer ───────────────────────────────────
+  // Bright high-frequency bell-glass arpeggio — fits the
+  // Paris fold / Penrose staircase reveals.
+  const playGlassShimmer = () => {
+    if (!audioCtx || !audioOn) return;
+    const t0 = audioCtx.currentTime;
+    const freqs = [2093, 2637, 3136, 4186, 3520, 2637]; // C7 E7 G7 C8 A7 E7
+    freqs.forEach((f, i) => {
+      const o = audioCtx.createOscillator();
+      o.type = "sine"; o.frequency.value = f;
+      const g = audioCtx.createGain();
+      const at = t0 + i * 0.09;
+      g.gain.setValueAtTime(0.0001, at);
+      g.gain.exponentialRampToValueAtTime(0.055, at + 0.008);
+      g.gain.exponentialRampToValueAtTime(0.0001, at + 0.55);
+      o.connect(g); g.connect(masterGain);
+      const send = audioCtx.createGain(); send.gain.value = 0.8;
+      g.connect(send); send.connect(convolver);
+      o.start(at); o.stop(at + 0.7);
+    });
+  };
+
+  // ── Limbo choir ───────────────────────────────────────────────
+  // Slow swelling detuned-sine cluster — ethereal and vast,
+  // suggests decades collapsing into a single breath.
+  const playLimboChoir = () => {
+    if (!audioCtx || !audioOn) return;
+    const t0 = audioCtx.currentTime;
+    const cluster = [146.8, 174.6, 196.0, 220.0, 261.6, 293.7]; // D3 F3 G3 A3 C4 D4
+    cluster.forEach((f, i) => {
+      const detune = (Math.random() - 0.5) * 14;
+      const o = audioCtx.createOscillator();
+      o.type = "sine"; o.frequency.value = f + detune;
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0.0001, t0 + i * 0.18);
+      g.gain.linearRampToValueAtTime(0.055, t0 + 1.6 + i * 0.18);
+      g.gain.linearRampToValueAtTime(0.0001, t0 + 4.5);
+      o.connect(g); g.connect(masterGain);
+      const send = audioCtx.createGain(); send.gain.value = 0.75;
+      g.connect(send); send.connect(convolver);
+      o.start(t0 + i * 0.18); o.stop(t0 + 5);
+    });
+  };
+
+  // ── Alarm tick escalation ─────────────────────────────────────
+  // Rapid metallic double-click — the Inception "countdown clock"
+  // sense of time running out. Triggered near the kick section.
+  let alarmTimer = null;
+  const playAlarmTick = () => {
+    if (!audioCtx || !audioOn) return;
+    const t0 = audioCtx.currentTime;
+    [0, 0.085].forEach((dt) => {
+      const o = audioCtx.createOscillator();
+      o.type = "triangle";
+      o.frequency.setValueAtTime(dt === 0 ? 420 : 340, t0 + dt);
+      o.frequency.exponentialRampToValueAtTime(180, t0 + dt + 0.05);
+      const g = audioCtx.createGain();
+      g.gain.setValueAtTime(0.18, t0 + dt);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + dt + 0.07);
+      // noise click transient
+      const nb = audioCtx.createBuffer(1, Math.floor(audioCtx.sampleRate * 0.015), audioCtx.sampleRate);
+      const nd = nb.getChannelData(0);
+      for (let k = 0; k < nd.length; k++) nd[k] = (Math.random() * 2 - 1) * (1 - k / nd.length);
+      const ns = audioCtx.createBufferSource(); ns.buffer = nb;
+      const nf = audioCtx.createBiquadFilter(); nf.type = "highpass"; nf.frequency.value = 3000;
+      const ng = audioCtx.createGain(); ng.gain.value = 0.08;
+      ns.connect(nf); nf.connect(ng); ng.connect(masterGain);
+      o.connect(g); g.connect(masterGain);
+      o.start(t0 + dt); o.stop(t0 + dt + 0.1); ns.start(t0 + dt);
+    });
+  };
+  const startAlarm = () => {
+    let interval = 600;
+    const tick = () => {
+      if (!audioOn) return;
+      playAlarmTick();
+      interval = Math.max(140, interval - 18);
+      alarmTimer = setTimeout(tick, interval);
+    };
+    tick();
+  };
+
+  // ── Depth sub rumble (ongoing, depth-reactive) ────────────────
+  // Low filtered noise that becomes more present in deep layers.
+  let rumbleNode = null, rumbleGainNode = null;
+  const startRumble = () => {
+    if (rumbleNode || !audioCtx) return;
+    const dur = 99999;
+    const len = audioCtx.sampleRate * 2;
+    const buf = audioCtx.createBuffer(1, len, audioCtx.sampleRate);
+    const data = buf.getChannelData(0);
+    for (let i = 0; i < len; i++) data[i] = Math.random() * 2 - 1;
+    rumbleNode = audioCtx.createBufferSource();
+    rumbleNode.buffer = buf;
+    rumbleNode.loop = true;
+    const filt = audioCtx.createBiquadFilter();
+    filt.type = "lowpass"; filt.frequency.value = 90; filt.Q.value = 1.5;
+    rumbleGainNode = audioCtx.createGain();
+    rumbleGainNode.gain.value = 0;
+    rumbleNode.connect(filt); filt.connect(rumbleGainNode); rumbleGainNode.connect(masterGain);
+    rumbleNode.start();
+  };
+
   // Expose audio helpers for other modules
   window.__incAudio = {
     playBwaam, playWhoosh, playTick, playSwell, playPiano, playCollect,
+    playDreamRiser, playGlassShimmer, playLimboChoir, playAlarmTick, startAlarm,
     ensure: () => { if (!audioCtx) buildAudio(); if (audioCtx.state === "suspended") audioCtx.resume(); },
     isOn: () => audioOn,
   };
@@ -1352,18 +1535,23 @@
   // ─────────────────────────────────────────
   // HERO TITLE — letters fly in with 3D rotation
   // ─────────────────────────────────────────
-  gsap.from(".hero__title span", {
-    yPercent: 120, rotateX: -90, opacity: 0,
-    transformOrigin: "50% 100%",
+  // GSAP solely owns the hero title now (the parallel CSS keyframe was
+  // removed). Entrance runs first; the perpetual float only starts once
+  // entrance is fully settled so the two never fight over `transform`.
+  const heroSpans = $$(".hero__title span");
+  gsap.set(heroSpans, { opacity: 0, yPercent: 120, rotateX: -90, transformOrigin: "50% 100%" });
+  gsap.to(heroSpans, {
+    opacity: 1, yPercent: 0, rotateX: 0,
     duration: 1.2, stagger: 0.06, ease: "back.out(1.6)",
-    delay: 0.3,
-  });
-  // subtle ongoing float on each title letter
-  $$(".hero__title span").forEach((s, i) => {
-    gsap.to(s, {
-      y: i % 2 ? -8 : 8, duration: 2.4 + i * 0.12,
-      repeat: -1, yoyo: true, ease: "sine.inOut", delay: i * 0.1,
-    });
+    delay: 1.3,
+    onComplete: () => {
+      heroSpans.forEach((s, i) => {
+        gsap.to(s, {
+          y: i % 2 ? -8 : 8, duration: 2.4 + i * 0.12,
+          repeat: -1, yoyo: true, ease: "sine.inOut", delay: i * 0.05,
+        });
+      });
+    },
   });
 
   // ─────────────────────────────────────────
@@ -1909,6 +2097,191 @@
   });
   window.addEventListener("mouseleave", () => {
     parallaxSections.forEach((el) => { el.style.transform = ""; });
+  });
+
+  // ─────────────────────────────────────────
+  // HERO EXIT WORLD-WARP
+  // Horizon warps as the city is "constructed" on exit.
+  // ─────────────────────────────────────────
+  gsap.to(".hero__layer--1", {
+    scaleX: 0.82, opacity: 0.3, ease: "none",
+    scrollTrigger: { trigger: ".hero", start: "60% top", end: "bottom top", scrub: true },
+  });
+  gsap.to(".hero__layer--2", {
+    scaleX: 0.9, opacity: 0.5, ease: "none",
+    scrollTrigger: { trigger: ".hero", start: "50% top", end: "bottom top", scrub: true },
+  });
+  gsap.fromTo(".hero__sky", { scale: 1 }, {
+    scale: 1.12, opacity: 0.6, ease: "none",
+    scrollTrigger: { trigger: ".hero", start: "top top", end: "bottom top", scrub: true },
+  });
+
+  // ─────────────────────────────────────────
+  // IDEA SECTION — floating words 3D parallax
+  // ─────────────────────────────────────────
+  $$(".idea__floating-words span").forEach((s, i) => {
+    const yDir = i % 2 === 0 ? -60 : 60;
+    const xDir = i % 3 === 0 ? -20 : 20;
+    gsap.to(s, {
+      y: yDir, x: xDir, opacity: 0, ease: "none",
+      scrollTrigger: { trigger: ".idea", start: "top bottom", end: "bottom top", scrub: true },
+    });
+  });
+
+  // ─────────────────────────────────────────
+  // LAYER-SPECIFIC PARTICLE BURSTS
+  // On each dream layer entry, spawn a burst of colored squares
+  // themed to that layer's palette.
+  // ─────────────────────────────────────────
+  const LAYER_COLORS = [
+    ["255,213,122", "255,150,50"],   // reality — amber/gold
+    ["140,190,220", "80,120,180"],   // city/rain — blue-grey
+    ["210,170,100", "160,110,50"],   // hotel — warm brown
+    ["200,220,240", "160,200,230"],  // snow — pale blue/white
+    ["80,100,130",  "40,60,90"],     // limbo — deep grey
+  ];
+  const spawnLayerBurst = (cx, cy, colors, count = 24) => {
+    for (let i = 0; i < count; i++) {
+      const el = document.createElement("div");
+      el.className = "layer-burst-dot";
+      const angle = (i / count) * Math.PI * 2 + Math.random() * 0.5;
+      const dist  = 80 + Math.random() * 200;
+      const size  = 5 + Math.random() * 11;
+      const col   = colors[Math.floor(Math.random() * colors.length)];
+      const dx = Math.cos(angle) * dist;
+      const dy = Math.sin(angle) * dist;
+      el.style.cssText = `
+        left:${cx}px; top:${cy}px;
+        width:${size}px; height:${size}px;
+        background:rgba(${col},0.75);
+        --dx:${dx.toFixed(1)}px; --dy:${dy.toFixed(1)}px;
+      `;
+      document.body.appendChild(el);
+      setTimeout(() => el.remove(), 1700);
+    }
+  };
+  $$(".layer").forEach((layer, idx) => {
+    ScrollTrigger.create({
+      trigger: layer,
+      start: "top 50%",
+      onEnter: () => {
+        const r = layer.getBoundingClientRect();
+        const cx = r.left + r.width / 2;
+        const cy = r.top  + r.height * 0.3;
+        spawnLayerBurst(cx, cy, LAYER_COLORS[idx] || LAYER_COLORS[0]);
+      },
+    });
+  });
+
+  // ─────────────────────────────────────────
+  // ARCHITECT SECTION — heading + description 3D tilt on scroll
+  // ─────────────────────────────────────────
+  gsap.fromTo(".architect__desc", { rotateX: 8, opacity: 0, y: 40 }, {
+    rotateX: 0, opacity: 1, y: 0, ease: "power2.out",
+    scrollTrigger: { trigger: ".architect__desc", start: "top 80%", end: "top 40%", scrub: 1 },
+  });
+  gsap.fromTo(".architect__quote", { rotateY: 12, opacity: 0, x: -30 }, {
+    rotateY: 0, opacity: 1, x: 0, ease: "power2.out",
+    scrollTrigger: { trigger: ".architect__quote", start: "top 80%", end: "top 40%", scrub: 1 },
+  });
+
+  // ─────────────────────────────────────────
+  // LAYERS SECTION — depth-descent colour shift on the whole page
+  // The CSS custom property --layer-hue drives tinted glow on fx layers.
+  // ─────────────────────────────────────────
+  const LAYER_HUES = [40, 210, 35, 200, 220]; // gold, steel-blue, warm, cool, limbo-dark
+  $$(".layer").forEach((layer, idx) => {
+    ScrollTrigger.create({
+      trigger: layer, start: "top 50%", end: "bottom 50%",
+      onToggle: (self) => {
+        if (self.isActive) {
+          gsap.to("body", { "--layer-hue": LAYER_HUES[idx], duration: 0.8, ease: "power2.out" });
+        }
+      },
+    });
+  });
+
+  // ─────────────────────────────────────────
+  // LIMBO LAYER — building shake on entry
+  // ─────────────────────────────────────────
+  ScrollTrigger.create({
+    trigger: ".layer--limbo", start: "top 55%",
+    onEnter: () => {
+      const bg = $(".layer__bg--limbo");
+      if (!bg) return;
+      bg.classList.add("limbo-shake");
+      setTimeout(() => bg.classList.remove("limbo-shake"), 900);
+    },
+  });
+
+  // ─────────────────────────────────────────
+  // TEAM CARDS — ghost projection effect on section enter
+  // Each card receives a brief neon "scan" on entry.
+  // ─────────────────────────────────────────
+  ScrollTrigger.create({
+    trigger: ".team", start: "top 60%",
+    onEnter: () => {
+      $$(".card").forEach((card, i) => {
+        setTimeout(() => {
+          card.classList.add("card-scan");
+          setTimeout(() => card.classList.remove("card-scan"), 800);
+        }, i * 80);
+      });
+    },
+  });
+
+  // ─────────────────────────────────────────
+  // KICK SECTION — multi-wave shockwave cascade
+  // ─────────────────────────────────────────
+  let kickMultiWaveFired = false;
+  ScrollTrigger.create({
+    trigger: ".kick", start: "top 60%",
+    onEnter: () => {
+      if (kickMultiWaveFired) return;
+      kickMultiWaveFired = true;
+      [0, 250, 550, 950].forEach((delay) => {
+        setTimeout(fireShockwave, delay);
+      });
+    },
+  });
+
+  // ─────────────────────────────────────────
+  // MARQUEE STRIPS — tilt with scroll velocity
+  // ─────────────────────────────────────────
+  lenis.on("scroll", ({ velocity }) => {
+    const tilt = clamp(velocity * 0.6, -8, 8);
+    $$(".marquee__track").forEach((t) => {
+      t.style.transform = `skewX(${tilt}deg)`;
+    });
+  });
+
+  // ─────────────────────────────────────────
+  // QUOTES SECTION — staggered 3D slide from alternating sides
+  // ─────────────────────────────────────────
+  $$(".q").forEach((q, i) => {
+    gsap.fromTo(q,
+      { x: i % 2 === 0 ? -80 : 80, rotateY: i % 2 === 0 ? -12 : 12, opacity: 0 },
+      { x: 0, rotateY: 0, opacity: 1, ease: "power3.out", duration: 1,
+        scrollTrigger: { trigger: q, start: "top 85%", toggleActions: "play none none none" },
+      });
+  });
+
+  // ─────────────────────────────────────────
+  // DEPTH-REACTIVE SCANLINE PULSE
+  // The scan layer gets a brief hard pulse on each layer transition.
+  // ─────────────────────────────────────────
+  $$(".layer").forEach((layer) => {
+    ScrollTrigger.create({
+      trigger: layer, start: "top 50%",
+      onEnter: () => {
+        const s = $(".fx-scan");
+        if (!s) return;
+        const prev = s.style.opacity;
+        s.style.transition = "opacity 0.04s";
+        s.style.opacity = "0.6";
+        setTimeout(() => { s.style.opacity = prev || ""; s.style.transition = ""; }, 200);
+      },
+    });
   });
 
   // ─────────────────────────────────────────
